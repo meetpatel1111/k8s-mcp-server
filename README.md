@@ -971,3 +971,9 @@ A:
 ## License
 
 MIT
+
+## Author
+
+**Meetkumar Patel**  
+Email: [pmeet464@gmail.com](mailto:pmeet464@gmail.com)  
+GitHub: [@meetpatel1111](https://github.com/meetpatel1111)
