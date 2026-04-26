@@ -176,22 +176,40 @@ Controls all three protection modes simultaneously for quick switching between f
 
 **Local storage:**
 - No credential storage on disk
-- No logging of sensitive data
-- Temporary files are cleaned up
-- Memory-only credential storage
+- No persistent storage of sensitive data
+- Credentials loaded into memory only from kubeconfig
+- Server does not write credentials to disk
 
 ### Data in Memory
 
 **Credential storage:**
 - Credentials stored in process memory only
 - Memory is cleared on server shutdown
-- No memory dumps or core dumps with credentials
-- Credentials never swapped to disk
+- Server does not actively prevent memory dumps (OS-dependent)
+- Server does not actively prevent swap to disk (OS-dependent)
 
 **Session isolation:**
 - Each server instance has isolated memory
 - No credential sharing between sessions
 - Restart clears all credentials
+
+### Logging
+
+**What is logged:**
+- Server startup messages (version, tool count, protection mode status)
+- Protection mode changes (enable/disable events)
+- Error messages for debugging (may include resource names, namespaces, error details)
+- Circuit breaker status changes
+- Tool invocation errors
+
+**What is NOT logged:**
+- Kubeconfig file contents
+- API tokens and certificates
+- Secret values
+- Authentication credentials
+- Sensitive configuration data
+
+**Note:** Error messages may contain resource names and namespaces but not credentials. Logs are written to stderr/stdout and managed by the host system.
 
 ## Security Best Practices
 
