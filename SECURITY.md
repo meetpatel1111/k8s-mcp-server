@@ -107,27 +107,49 @@ The server includes two protection modes to prevent accidental or malicious oper
 
 **Configuration:**
 ```bash
-export K8S_MCP_PROTECTION_MODE=enabled  # Default
-export K8S_MCP_PROTECTION_MODE=disabled  # Disable protection
+export INFRA_PROTECTION_MODE=true  # Enable (default: true)
+export INFRA_PROTECTION_MODE=false # Disable protection
 ```
 
-### Multi-Mode Protection
+### Strict Protection Mode
 
-**Purpose:** Fine-grained control over different operation categories
+**Purpose:** Blocks ALL non-read-only operations - highest level of protection
 
-**Protection categories:**
-- `node`: Node-level operations
-- `storage`: Storage operations
-- `network`: Network operations
-- `config`: Configuration changes
-- `delete`: Delete operations
+**What it blocks:**
+- All modification operations (create, update, delete)
+- Only allows list, get, describe, and monitoring operations
+- Useful for production clusters where no modifications should ever be made
 
 **Configuration:**
 ```bash
-export K8S_MCP_PROTECT_NODES=true
-export K8S_MCP_PROTECT_STORAGE=true
-export K8S_MCP_PROTECT_NETWORK=false
+export STRICT_PROTECTION_MODE=true  # Enable (default: false)
+export STRICT_PROTECTION_MODE=false # Disable
 ```
+
+**Tool:** `k8s_toggle_strict_protection_mode`
+
+### No Delete Protection Mode
+
+**Purpose:** Blocks only deletion operations while allowing other modifications
+
+**What it blocks:**
+- Delete operations only
+- Allows create, update, scale, and modify operations
+- Useful for environments where modifications are needed but accidental deletions must be prevented
+
+**Configuration:**
+```bash
+export NO_DELETE_PROTECTION_MODE=true  # Enable (default: false)
+export NO_DELETE_PROTECTION_MODE=false # Disable
+```
+
+**Tool:** `k8s_toggle_no_delete_mode`
+
+### Master Toggle
+
+**Tool:** `k8s_toggle_all_protection_modes`
+
+Controls all three protection modes simultaneously for quick switching between full access and fully protected states.
 
 ## Data Protection
 
