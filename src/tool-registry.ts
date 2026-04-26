@@ -7,12 +7,12 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 export interface ToolRegistration {
   tool: Tool;
-  handler: (...args: any[]) => any;
+  handler: Function;
 }
 
 export class ToolRegistry {
   private tools: Map<string, Tool> = new Map();
-  private handlers: Map<string, (...args: any[]) => any> = new Map();
+  private handlers: Map<string, Function> = new Map();
 
   /**
    * Register a single tool
@@ -42,7 +42,7 @@ export class ToolRegistry {
   /**
    * Get a handler by name
    */
-  getHandler(name: string): ((...args: any[]) => any) | undefined {
+  getHandler(name: string): Function | undefined {
     return this.handlers.get(name);
   }
 
@@ -56,7 +56,7 @@ export class ToolRegistry {
   /**
    * Get all registered handlers
    */
-  getAllHandlers(): Map<string, (...args: any[]) => any> {
+  getAllHandlers(): Map<string, Function> {
     return new Map(this.handlers);
   }
 
