@@ -79,7 +79,7 @@ export function validateLabelSelector(selector: string): void {
 
   // Basic label selector format validation
   // Supports: key=value, key!=value, key, !key, key in (v1, v2), key notin (v1, v2)
-  const validSelectorPattern = /^[a-zA-Z0-9][-a-zA-Z0-9_.]*(([!=]=[^,]+)|(\s+(in|notin)\s*\([^)]+\)))?$/;
+  // const validSelectorPattern = /^[a-zA-Z0-9][-a-zA-Z0-9_.]*(([!=]=[^,]+)|(\s+(in|notin)\s*\([^)]+\)))?$/;
   
   // Split by comma for multiple selectors
   const selectors = selector.split(",").map(s => s.trim());
