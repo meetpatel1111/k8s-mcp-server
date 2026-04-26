@@ -1,0 +1,50 @@
+{
+  "name": "k8s-mcp-server",
+  "version": "0.12.0",
+  "description": "Production-grade Kubernetes MCP Server - Complete kubectl coverage with Infrastructure Protection, Helm support, Diagnostics, Response Caching, 190+ tools",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepare": "husky install && npm run build",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+  },
+  "keywords": [
+    "kubernetes",
+    "mcp",
+    "kubectl",
+    "kubelet",
+    "k8s",
+    "cluster-management",
+    "devops",
+    "helm",
+    "diagnostics",
+    "model-context-protocol"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.0",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,143 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.12.0] - 2026-04-26
+
+### Added
+- Consolidated documentation into `TOOLS_REFERENCE.md`
+- Added `DOCKER_DESKTOP_GUIDE.md` for Docker Desktop Kubernetes users
+- Updated README with 260+ tool count and Helm support
+
+### Changed
+- Refactored documentation structure
+- Fixed broken documentation links
+
+## [0.11.0] - 2026-04-22
+
+### Added
+- `mcp_server_info` tool for comprehensive server diagnostics
+- `mcp_health_check` tool with deep cluster connectivity checks
+- `mcp_tool_metrics` for performance monitoring and usage statistics
+
+### Fixed
+- Improved error handling for missing kubeconfig scenarios
+
+## [0.10.0] - 2026-04-18
+
+### Added
+- **Helm Tools Suite** - 40+ tools for complete Helm lifecycle management
+  - Release management: install, upgrade, rollback, uninstall, history, status, test
+  - Chart operations: pull, package, search, show, template, lint, verify
+  - Repository management: add, remove, update, list
+  - Registry operations: login, logout, push
+  - Plugin management: install, uninstall, update, list
+- Helm chart creation with `mcp8_k8s_helm_create`
+- Helm dependency management support
+
+## [0.9.0] - 2026-04-12
+
+### Added
+- **Multi-Mode Protection System**
+  - `k8s_toggle_protection_mode` - Infrastructure Protection (default)
+  - `k8s_toggle_strict_protection_mode` - Strict read-only mode
+  - `k8s_toggle_no_delete_mode` - No-delete protection mode
+  - `k8s_toggle_all_protection_modes` - Master control for all modes
+- `k8s_pod_log_search` for searching patterns across pod logs
+- `k8s_bulk_delete_pods` for bulk pod deletion with selectors
+
+### Changed
+- Enhanced protection mode enforcement across all destructive tools
+
+## [0.8.0] - 2026-04-08
+
+### Added
+- WebSocket-based interactive tools
+  - `k8s_stream_logs` - Real-time log streaming
+  - `k8s_attach_pod` - Container attachment
+  - `k8s_port_forward` - Secure port forwarding
+- `k8s_quick_deploy` templates for web, api, database, worker workloads
+- `k8s_cluster_health` and `k8s_health_score` for cluster diagnostics
+- `k8s_find_orphaned_resources` and `k8s_suggest_optimizations`
+- `k8s_debug_node` and `k8s_node_pressure_status` for node diagnostics
+- `k8s_restart_deployment`, `k8s_restart_statefulset`, `k8s_restart_daemonset`
+
+## [0.7.0] - 2026-03-25
+
+### Added
+- `k8s_check_privileged_pods` for security auditing
+- Certificate management: `mcp8_k8s_certificate_approve`, `mcp8_k8s_certificate_deny`
+- `k8s_debug_pod` and `k8s_debug_scheduling` for pod troubleshooting
+- `k8s_validate_manifest`, `k8s_diff`, `k8s_wait`, `k8s_watch`
+- `k8s_rollout_pause`, `k8s_rollout_resume`, `k8s_rollout_undo`
+- `k8s_scale` and `k8s_autoscale` for workload scaling
+- `k8s_restart_pod` for pod restart operations
+
+### Changed
+- Enhanced RBAC tools with comprehensive listing and detail views
+
+## [0.6.0] - 2026-03-15
+
+### Added
+- Complete Kubernetes resource coverage
+  - Cluster: contexts, namespaces, API versions, component status
+  - Nodes: list, describe, cordon, uncordon, drain, taints, labels
+  - Pods: logs, exec, describe, events, metrics, delete
+  - Workloads: Deployments, StatefulSets, DaemonSets, ReplicaSets, Jobs, CronJobs
+  - Networking: Services, Endpoints, EndpointSlices, Ingresses, NetworkPolicies
+  - Storage: PVs, PVCs, StorageClasses
+  - Security: RBAC resources, Secrets, ConfigMaps
+- `k8s_apply_manifest` and `k8s_export_resource`
+- `k8s_find_crashloop_pods` and `k8s_find_unhealthy_pods`
+
+## [0.5.0] - 2026-03-01
+
+### Added
+- Production-ready MCP server
+- 120+ Kubernetes management tools across 12 categories
+- Infrastructure Protection Mode with toggle tool
+- Circuit breaker pattern for fault tolerance
+- K8sClient with retry logic and timeout protection
+- Comprehensive documentation: README, API docs, kubectl mappings
+
+## [0.4.0] - 2026-02-20
+
+### Added
+- Beta release with core functionality
+- Pod listing, logs, exec capabilities
+- Node management (list, describe)
+- Basic workload support (Deployments, Services)
+- Context switching and cluster information
+
+### Changed
+- Refactored from proof-of-concept to production structure
+
+## [0.3.0] - 2026-02-10
+
+### Added
+- Expanded tool coverage for alpha testing
+- RBAC resource listing (ServiceAccounts, Roles, RoleBindings)
+- Storage resource support (PVs, PVCs, StorageClasses)
+- Job and CronJob management
+- Namespace operations
+
+## [0.2.0] - 2026-02-01
+
+### Added
+- Alpha release with basic Kubernetes tools
+- MCP server foundation with SDK integration
+- Core pod operations (list, logs)
+- Cluster context management
+- TypeScript project structure
+
+## [0.1.0] - 2026-01-20
+
+### Added
+- Initial proof-of-concept
+- Basic kubectl wrapper functionality
+- Project scaffolding with TypeScript

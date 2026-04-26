@@ -1,0 +1,973 @@
+# k8s-mcp-server
+
+[![npm version](https://badge.fury.io/js/k8s-mcp-server.svg)](https://www.npmjs.com/package/k8s-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/k8s-mcp-server.svg)](https://nodejs.org/)
+
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.12.0 - Complete cluster management via Model Context Protocol with Helm support and multi-mode protection.
+
+## Overview
+
+This MCP server provides comprehensive Kubernetes cluster management capabilities, exposing kubectl/kubelet/API server functionality through the Model Context Protocol. It enables AI assistants and MCP clients to interact with Kubernetes clusters programmatically.
+
+## Features
+
+### 260+ Kubernetes & Helm Management Tools
+
+| Category | Tools |
+|----------|-------|
+| **Cluster & Context** | List contexts, switch context, cluster version, component status, cluster health, API latency check |
+| **Node Management** | List nodes, node details, cordon/uncordon, drain, taints, labels, pressure status, debug |
+| **Pod Management** | List pods, pod details, logs, stream logs, search logs, exec, attach, delete, debug, scheduling analysis, failure analysis |
+| **Workloads** | Deployments, StatefulSets, DaemonSets, ReplicaSets, Jobs, CronJobs, scaling, rolling restart, rollout management, autoscaling |
+| **Networking** | Services, endpoints, ingresses, network policies, DNS test, service topology |
+| **Storage** | PersistentVolumes, PVCs, StorageClasses, unbound PVC detection, storage summary |
+| **Security & RBAC** | ServiceAccounts, Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, Secrets, ConfigMaps, privileged pod detection, certificates |
+| **Monitoring** | Events, resource quotas, limit ranges, crash loop detection, pod/node metrics, health score, optimization suggestions |
+| **Configuration** | Apply manifests, export YAML, validate manifests, namespace management, patch, edit, diff, wait, watch |
+| **Advanced** | Raw API queries, pod failure analysis, bulk operations, orphaned resource detection, resource age reports |
+| **Helm** | 40+ tools for releases, charts, repos, plugins, registry (install, upgrade, rollback, lint, template, search) |
+| **Server Management** | Server info, health checks, tool metrics, protection mode toggles |
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[README.md](README.md)** | Main documentation (this file) - Quick start, features, examples |
+| **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)** | Complete tool reference with kubectl mappings, natural language patterns, and parameter details |
+| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Detailed API schemas, input/output examples for key tools |
+| **[CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)** | Known limitations and workarounds for cloud providers (AKS, GKE, EKS) |
+| **[METRICS_SERVER.md](METRICS_SERVER.md)** | Installation guide for metrics-server (required for metrics tools) |
+| **[DOCKER_DESKTOP_GUIDE.md](DOCKER_DESKTOP_GUIDE.md)** | Docker Desktop Kubernetes setup guide |
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js 18+** installed
+- **kubectl** installed and configured
+- **Git** installed
+- **Helm** (optional, required for Helm tools)
+
+### Optional: Install Helm
+
+The MCP server includes Helm tools for managing Helm charts. To use these features, install Helm:
+
+**Windows:**
+```powershell
+winget install Helm.Helm
+```
+
+**macOS:**
+```bash
+brew install helm
+```
+
+**Linux:**
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+Verify installation:
+```bash
+helm version
+```
+
+### Installation
+
+1. **Clone the repository**:
+```bash
+git clone https://github.com/meetpatel1111/k8s-mcp-server.git
+cd k8s-mcp-server
+```
+
+2. **Install dependencies**:
+```bash
+npm install
+```
+
+3. **Build the project**:
+```bash
+npm run build
+```
+
+### Quick Start Examples
+
+#### Workflow 1: Check Cluster Health
+
+**Goal:** Quickly assess the overall health of your Kubernetes cluster
+
+**Steps:**
+1. Ask Claude: "What's the health of my cluster?"
+2. Claude will automatically:
+   - Check cluster health status
+   - Verify node availability
+   - Check for unhealthy pods
+   - Provide a health score
+
+**Expected result:** Summary of cluster status with any issues highlighted
+
+#### Workflow 2: Deploy a Simple Application
+
+**Goal:** Deploy nginx with 3 replicas and expose it as a service
+
+**Steps:**
+1. Ask Claude: "Deploy nginx with 3 replicas in the default namespace and expose it on port 80"
+2. Claude will:
+   - Create the deployment
+   - Create a service to expose it
+   - Verify the deployment is running
+   - Show you the service endpoint
+
+**Expected result:** Running nginx deployment with service accessible
+
+#### Workflow 3: Debug a Failing Pod
+
+**Goal:** Investigate why a pod is crashing
+
+**Steps:**
+1. Ask Claude: "My pod my-app-pod is failing, can you help debug it?"
+2. Claude will:
+   - Check pod status and events
+   - Retrieve recent logs
+   - Analyze the failure
+   - Suggest fixes
+
+**Expected result:** Diagnosis of the issue with recommended solutions
+
+#### Workflow 4: Scale an Application
+
+**Goal:** Increase replicas to handle more traffic
+
+**Steps:**
+1. Ask Claude: "Scale the web-app deployment to 5 replicas"
+2. Claude will:
+   - Check current replica count
+   - Scale to 5 replicas
+   - Verify the scaling completed
+   - Show pod status
+
+**Expected result:** Deployment scaled to 5 replicas
+
+#### Workflow 5: Install a Helm Chart
+
+**Goal:** Install Prometheus using Helm
+
+**Steps:**
+1. Ask Claude: "Install the Prometheus Helm chart in the monitoring namespace"
+2. Claude will:
+   - Add the Prometheus Helm repository
+   - Install the chart
+   - Verify the installation
+   - Provide access information
+
+**Expected result:** Prometheus installed and running
+
+#### Workflow 6: Clean Up Failed Resources
+
+**Goal:** Remove all failed pods from a namespace
+
+**Steps:**
+1. Ask Claude: "Clean up all failed pods in the staging namespace"
+2. Claude will:
+   - List failed pods
+   - Delete them in bulk
+   - Confirm cleanup
+
+**Expected result:** Failed pods removed
+
+#### Workflow 7: Check Resource Usage
+
+**Goal:** Monitor CPU and memory usage of pods
+
+**Steps:**
+1. Ask Claude: "Show me resource usage for all pods in the default namespace"
+2. Claude will:
+   - Retrieve metrics for all pods
+   - Display CPU and memory usage
+   - Highlight any resource-intensive pods
+
+**Expected result:** Resource usage table for all pods
+
+#### Workflow 8: Update a Deployment Image
+
+**Goal:** Update a deployment to use a new image version
+
+**Steps:**
+1. Ask Claude: "Update the web-app deployment to use nginx:1.25"
+2. Claude will:
+   - Update the deployment image
+   - Monitor the rollout
+   - Verify the new pods are running
+   - Show rollout status
+
+**Expected result:** Deployment updated with new image
+
+### Configure Your MCP Client
+
+#### Option 1: Claude Desktop
+
+1. **Open Settings**: Press `Cmd + ,` (Mac) or `Ctrl + ,` (Windows/Linux)
+2. **Go to Developer → Edit Config**
+3. **Add this configuration** (update the path):
+
+**Mac/Linux:**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "node",
+      "args": ["/path/to/k8s-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Windows:**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "node",
+      "args": ["C:\\path\\to\\k8s-mcp-server\\dist\\index.js"]
+    }
+  }
+}
+```
+
+4. **Save and Restart Claude Desktop**
+5. **Test it**: Ask Claude "List my Kubernetes pods"
+
+#### Option 2: VS Code
+
+**Mac/Linux:**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "node",
+      "args": ["/path/to/k8s-mcp-server/dist/index.js"],
+      "description": "Kubernetes cluster management"
+    }
+  }
+}
+```
+
+**Windows:**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "node",
+      "args": ["C:\\path\\to\\k8s-mcp-server\\dist\\index.js"],
+      "description": "Kubernetes cluster management"
+    }
+  }
+}
+```
+
+#### Option 3: Cursor
+
+Add server with command:
+**Mac/Linux:** `node /path/to/k8s-mcp-server/dist/index.js`
+**Windows:** `node C:\path\to\k8s-mcp-server\dist\index.js`
+
+#### Option 4: Claude Code
+
+```bash
+claude mcp add kubernetes node /path/to/k8s-mcp-server/dist/index.js
+```
+
+---
+
+## Prerequisites
+
+Before using this MCP server, make sure you have:
+
+1. **kubectl installed** - [Installation Guide](https://kubernetes.io/docs/tasks/tools/)
+2. **A valid kubeconfig file** at `~/.kube/config` (or set `KUBECONFIG` env var)
+3. **Access to a Kubernetes cluster** (minikube, Docker Desktop, GKE, EKS, etc.)
+
+**Quick verification:**
+```bash
+kubectl get pods
+```
+If this works, you're ready!
+
+### Metrics Server (Optional but Recommended)
+
+For resource usage monitoring features (CPU/memory metrics for pods and nodes), install the Kubernetes Metrics Server:
+
+**Installation:**
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+**Verification:**
+```bash
+# Wait a few seconds for the pod to start
+kubectl get pods -n kube-system -l k8s-app=metrics-server
+
+# Test metrics
+kubectl top nodes
+kubectl top pods
+```
+
+**Features enabled with metrics-server:**
+- `k8s_top_pod` - Display resource usage for pods
+- `k8s_top_node` - Display resource usage for nodes
+- `k8s_get_pod_metrics` - Get detailed pod metrics
+- `k8s_get_node_metrics` - Get detailed node metrics
+- Enhanced `k8s_health_score` - More accurate health assessment
+
+**Troubleshooting metrics-server:**
+- If metrics are unavailable, verify the pod is running: `kubectl logs -n kube-system -l k8s-app=metrics-server`
+- For Docker Desktop/minikube, you may need to add `--kubelet-insecure-tls` flag to metrics-server deployment
+
+### For Different Kubernetes Setups:
+
+- **Docker Desktop**: Kubernetes is built-in, enable in Settings
+- **minikube**: Run `minikube start`
+- **Rancher Desktop**: Enable Kubernetes in Preferences
+- **Cloud (GKE/EKS/AKS)**: Follow provider's setup guide
+
+---
+
+### Manual Claude Desktop Config File Paths
+
+Add to `claude_desktop_config.json`:
+
+**Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+**Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "k8s": {
+      "command": "node",
+      "args": ["/path/to/k8s-mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+## Tool Reference
+
+For a complete list of all 260+ tools and their kubectl equivalents, see **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)**.
+
+### Tool Categories
+
+| Category | Count | Sample Tools |
+|----------|-------|--------------|
+| **Cluster** | 17 | Context, namespace, API versions, resource quotas, priority classes |
+| **Nodes** | 10 | List, cordon, drain, taints |
+| **Pods** | 12 | Logs, exec, debug, delete |
+| **Workloads** | 42 | Deployments, Jobs, CronJobs, scaling, PodDisruptionBudgets |
+| **Networking** | 17 | Services, ingress, DNS, topology, endpoints, endpointslices |
+| **Storage** | 11 | PVs, PVCs, StorageClasses |
+| **Security** | 31 | RBAC, secrets, roles, bindings, auth reconcile, certificates |
+| **Monitoring** | 11 | Events, metrics, health score |
+| **Configuration** | 14 | Apply, edit, diff, validate, kustomize, last-applied |
+| **Advanced** | 20 | Bulk ops, analysis, optimization, wait, proxy |
+| **Templates** | 4 | Resource templates |
+| **WebSocket** | 4 | Exec, attach, port-forward, logs |
+
+**Total: 170+ tools**
+
+### Infrastructure Protection
+
+Destructive tools are blocked by default. Use `k8s_toggle_protection_mode` to enable:
+- Delete operations
+- Node modifications (drain, cordon)
+- Resource modifications (patch, label)
+- Scaling operations
+
+See [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) for full kubectl → MCP tool mapping.
+
+## Claude Desktop Integration
+
+This MCP server is designed for seamless integration with Claude Desktop. Once configured, you can interact with your Kubernetes clusters using natural language.
+
+### Configuration
+
+**Prerequisites:** Before configuring, ensure you have:
+1. Installed dependencies: `npm install`
+2. Built the project: `npm run build`
+
+Add to your Claude Desktop config:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+Open Claude Desktop → Settings → Developer → Edit Config, then add:
+
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "node",
+      "args": ["PATH/TO/k8s-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Replace `PATH/TO/k8s-mcp-server` with your actual installation path.**
+
+### Common Workflows
+
+#### **Check Cluster Status**
+
+**You ask:** "What's the health of my cluster?"
+
+**Claude responds by:**
+- Calling `k8s_cluster_health` to get overall status
+- Calling `k8s_health_score` for a health score
+- Calling `k8s_list_nodes` to check node status
+- Summarizing the cluster state
+
+#### **Debug Application Issues**
+
+**You ask:** "My web-app deployment is having issues, can you help debug?"
+
+**Claude responds by:**
+- Calling `k8s_list_pods` with label selector `app=web-app`
+- Calling `k8s_get_pod_events` for failing pods
+- Calling `k8s_get_pod_logs` to check error messages
+- Calling `k8s_analyze_pod_failure` if pods are crashing
+- Providing diagnosis and suggested fixes
+
+#### **Deploy a New Application**
+
+**You ask:** "Deploy nginx with 3 replicas in the production namespace"
+
+**Claude responds by:**
+- Calling `k8s_create_deployment` with:
+  - name: `nginx`
+  - image: `nginx:latest`
+  - replicas: `3`
+  - namespace: `production`
+- Calling `k8s_create_service` to expose it
+- Calling `k8s_list_pods` to verify deployment
+- Confirming successful deployment
+
+#### **Scale Based on Traffic**
+
+**You ask:** "Scale the api-service to handle more traffic"
+
+**Claude responds by:**
+- Calling `k8s_get_deployment` to check current replicas
+- Calling `k8s_scale_deployment` to increase replicas
+- Calling `k8s_autoscale` to set up HPA for automatic scaling
+- Confirming the changes
+
+#### **Helm Chart Management**
+
+**You ask:** "Install the Prometheus Helm chart in the monitoring namespace"
+
+**Claude responds by:**
+- Calling `mcp8_k8s_helm_repo_add` to add the Prometheus repository
+- Calling `mcp8_k8s_helm_install` with:
+  - chart: `prometheus/prometheus`
+  - namespace: `monitoring`
+  - release: `prometheus`
+- Calling `mcp8_k8s_helm_status` to verify installation
+- Providing access URLs
+
+#### **Resource Cleanup**
+
+**You ask:** "Clean up all failed pods in the staging namespace"
+
+**Claude responds by:**
+- Calling `k8s_list_pods` with field selector for failed status
+- Calling `k8s_bulk_delete_pods` with label selector for cleanup
+- Confirming the cleanup
+
+#### **Security Audit**
+
+**You ask:** "Check for any security issues in my cluster"
+
+**Claude responds by:**
+- Calling `k8s_check_privileged_pods` to find privileged containers
+- Calling `k8s_list_secrets` to review secret exposure
+- Calling `k8s_get_rbac_summary` to check permissions
+- Providing security recommendations
+
+### Tips for Best Results
+
+- **Be specific with namespaces:** "in the production namespace" vs "in production"
+- **Use resource names:** "the web-app deployment" vs "the web app"
+- **Describe the goal:** "scale to handle more traffic" vs "scale it"
+- **Ask for explanations:** "why is this pod failing?" triggers deeper analysis
+- **Request verification:** "and verify it worked" adds confirmation steps
+
+### Protection Mode in Claude Desktop
+
+When protection mode is enabled (default), Claude will:
+- Ask for confirmation before destructive operations
+- Explain what will happen before executing
+- Suggest safer alternatives when available
+- Block operations that could break infrastructure
+
+To disable protection temporarily:
+```
+You: "Disable protection mode so I can make changes"
+Claude: Uses k8s_toggle_protection_mode to disable
+```
+
+## Examples
+
+### List all pods in a namespace
+
+```
+Use the k8s_list_pods tool with namespace="default"
+```
+
+### Get pod logs
+
+```
+Use the k8s_get_pod_logs tool with:
+- name="my-pod"
+- namespace="default"
+- tailLines=50
+```
+
+### Scale a deployment
+
+```
+Use the k8s_scale_deployment tool with:
+- name="my-deployment"
+- namespace="default"
+- replicas=5
+```
+
+### Check cluster health
+
+```
+Use the k8s_health_score tool
+```
+
+### Debug a failing pod
+
+```
+Use the k8s_analyze_pod_failure tool with:
+- name="failing-pod"
+- namespace="default"
+```
+
+### Apply a manifest
+
+```
+Use the k8s_apply_manifest tool with:
+- manifest="<YAML content>"
+- namespace="default" (optional)
+```
+
+### Check pod resource usage
+
+```
+Use the k8s_top_pod tool with:
+- namespace="default" (optional)
+- sortBy="cpu" or "memory" (optional)
+```
+
+### View pod logs
+
+```
+Use the k8s_get_pod_logs tool with:
+- name="my-pod"
+- namespace="default"
+- tailLines=100 (optional)
+- follow=true (optional, for streaming)
+```
+
+### List events
+
+```
+Use the k8s_list_events tool with:
+- namespace="default" (optional)
+- type="Warning" (optional)
+```
+
+### Cordon a node
+
+```
+Use the k8s_cordon_node tool with:
+- name="node-1"
+```
+
+### Rollback a deployment
+
+```
+Use the k8s_rollback_deployment tool with:
+- name="web-app"
+- namespace="default"
+- revision=3 (optional, defaults to previous)
+```
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `KUBECONFIG` | Path to kubeconfig file | `~/.kube/config` |
+| `INFRA_PROTECTION_MODE` | Enable infrastructure protection (blocks destructive operations) | `true` (enabled) |
+| `STRICT_PROTECTION_MODE` | Enable strict protection (blocks all non-read operations) | `false` (disabled) |
+| `NO_DELETE_PROTECTION_MODE` | Enable no-delete protection (blocks deletions only, allows updates) | `false` (disabled) |
+
+### Protection Modes
+
+Three configurable protection modes for safety:
+
+| Mode | Description | Default |
+|------|-------------|---------|
+| **Infrastructure Protection** | Blocks all destructive operations (delete, drain, cordon, scale, etc.) | `enabled` |
+| **Strict Protection** | Blocks all non-read-only operations (read-only mode) | `disabled` |
+| **No Delete Protection** | Blocks only deletion operations, allows updates/changes | `disabled` |
+
+**Toggle via environment variables:**
+```bash
+INFRA_PROTECTION_MODE=false npm start          # Disable infrastructure protection
+STRICT_PROTECTION_MODE=true npm start          # Enable strict read-only mode
+NO_DELETE_PROTECTION_MODE=true npm start       # Enable no-delete mode
+```
+
+**Toggle via tools:**
+```bash
+k8s_toggle_protection_mode { enabled: false, confirm: true }           # Infrastructure toggle
+k8s_toggle_strict_protection_mode { enabled: true }                     # Strict mode toggle
+k8s_toggle_no_delete_mode { enabled: true }                           # No-delete mode toggle
+k8s_toggle_all_protection_modes { infrastructure: true, strict: false, noDelete: true }  # Master toggle
+```
+
+**Check status:**
+```
+Use mcp_server_info or mcp_health_check to see current protection mode status
+```
+
+## Architecture
+
+### Tool Organization
+
+Tools are organized by domain across 12 TypeScript files:
+
+| File | Tools | Domain |
+|------|-------|--------|
+| `cluster.ts` | 10 | Context switching, cluster info, namespaces, API versions |
+| `nodes.ts` | 10 | Node management, cordon, drain, taints, labels |
+| `pods.ts` | 12 | Pod operations, logs, exec, debugging |
+| `workloads.ts` | 27 | Deployments, StatefulSets, Jobs, scaling, rollouts |
+| `networking.ts` | 11 | Services, ingresses, network policies, DNS |
+| `storage.ts` | 10 | PVs, PVCs, StorageClasses |
+| `security.ts` | 23 | RBAC, secrets, service accounts, policies |
+| `monitoring.ts` | 9 | Events, metrics, quotas, health scores |
+| `config.ts` | 9 | Manifests, apply, export, edit, cp, diff |
+| `advanced.ts` | 18 | Raw API queries, bulk ops, analysis, optimization |
+| `templates.ts` | 4 | Quick deploy templates |
+| `websocket.ts` | 4 | Interactive exec, attach, port-forward |
+| `helm-tools/` | 40+ | Helm releases, charts, repos, plugins, registry |
+
+**Total: 260+ tools**
+
+### Core Components
+
+```
+┌─────────────────────────────────────────┐
+│           K8sMcpServer                  │
+│  ┌─────────────────────────────────┐     │
+│  │     Tool Registration         │     │
+│  │  • cluster.ts                 │     │
+│  │  • nodes.ts                   │     │
+│  │  • pods.ts                    │     │
+│  │  • helm-tools/ (40+ tools)    │     │
+│  │  • [10 more files...]         │     │
+│  └─────────────────────────────────┘     │
+│  ┌─────────────────────────────────┐     │
+│  │   Multi-Mode Protection        │     │
+│  │  • Infrastructure Protection   │     │
+│  │  • Strict Protection (RO)    │     │
+│  │  • No-Delete Protection      │     │
+│  │  • Toggle via env/tools      │     │
+│  └─────────────────────────────────┘     │
+│  ┌─────────────────────────────────┐     │
+│  │   Circuit Breaker & Metrics    │     │
+│  │  • Error rate monitoring       │     │
+│  │  • Auto-disable on failures    │     │
+│  └─────────────────────────────────┘     │
+│              ↓                          │
+│  ┌─────────────────────────────────┐     │
+│  │        K8sClient               │     │
+│  │  • Retry logic                 │     │
+│  │  • Timeout protection          │     │
+│  │  • kubeconfig handling         │     │
+│  └─────────────────────────────────┘     │
+└─────────────────────────────────────────┘
+```
+
+### Request Flow
+
+1. **MCP Client** sends tool call request
+2. **K8sMcpServer** validates request
+3. **Protection Check** - blocks based on active protection mode (Infrastructure/Strict/No-Delete)
+4. **Circuit Breaker** - blocks if too many errors
+5. **Handler Execution** - calls appropriate tool (Kubernetes or Helm)
+6. **K8sClient** - makes Kubernetes API calls
+7. **Response** - returns result to MCP client
+
+## Troubleshooting
+
+### Claude Desktop Connection Issues
+
+**Problem:** Claude Desktop doesn't recognize the MCP server
+
+**Solutions:**
+1. Verify the path in `claude_desktop_config.json` is correct
+2. Ensure you ran `npm install` and `npm run build` before configuring
+3. Check that Node.js 18+ is installed: `node --version`
+4. Restart Claude Desktop after editing the config file
+5. Check Claude Desktop logs (Help → Developer → Show Logs) for errors
+
+**Problem:** Tools are not available in Claude Desktop
+
+**Solutions:**
+1. Verify the MCP server is running (check Claude Desktop logs)
+2. Ensure kubeconfig is accessible at `~/.kube/config` or set `KUBECONFIG` env var
+3. Test kubectl connectivity: `kubectl cluster-info`
+4. Check if protection mode is blocking operations
+
+### Kubernetes Connection Issues
+
+**Problem:** "Unable to connect to the server" error
+
+**Solutions:**
+1. Verify kubectl is configured: `kubectl config current-context`
+2. Check kubeconfig file exists and is valid
+3. Test cluster connectivity: `kubectl get nodes`
+4. Ensure proper permissions for the configured context
+5. Check if cluster is behind a VPN or requires special authentication
+
+**Problem:** Authentication errors
+
+**Solutions:**
+1. Refresh authentication: `kubectl auth can-i list pods`
+2. Check token expiration: `kubectl config view`
+3. Re-authenticate if using cloud provider (AWS EKS, GKE, AKS)
+4. Verify service account permissions if using in-cluster config
+
+### Build and Installation Issues
+
+**Problem:** `npm install` fails
+
+**Solutions:**
+1. Clear npm cache: `npm cache clean --force`
+2. Delete `node_modules` and `package-lock.json`, then reinstall
+3. Check Node.js version: `node --version` (must be 18+)
+4. Try with npm legacy peer deps: `npm install --legacy-peer-deps`
+
+**Problem:** `npm run build` fails with TypeScript errors
+
+**Solutions:**
+1. Ensure all dependencies are installed: `npm install`
+2. Check TypeScript version in `package.json`
+3. Run typecheck for details: `npm run typecheck`
+4. Update TypeScript: `npm install typescript@latest`
+
+### Helm Tools Not Working
+
+**Problem:** Helm tools return "helm command not found"
+
+**Solutions:**
+1. Install Helm: See [Helm Installation Guide](https://helm.sh/docs/intro/install/)
+2. Verify installation: `helm version`
+3. Ensure Helm is in your system PATH
+4. Restart Claude Desktop after installing Helm
+
+**Problem:** Helm repo operations fail
+
+**Solutions:**
+1. Check internet connectivity
+2. Verify repo URL is correct
+3. Try adding repo manually: `helm repo add <name> <url>`
+4. Check Helm repo list: `helm repo list`
+
+### Protection Mode Issues
+
+**Problem:** Operations blocked by protection mode
+
+**Solutions:**
+1. Check current protection status using `mcp_server_info`
+2. Temporarily disable: `k8s_toggle_protection_mode { enabled: false, confirm: true }`
+3. Use appropriate protection mode for your use case:
+   - Infrastructure Protection: Blocks destructive ops
+   - Strict Protection: Read-only mode
+   - No-Delete Protection: Allows updates, blocks deletions
+
+**Problem:** Cannot toggle protection mode
+
+**Solutions:**
+1. Ensure you have confirmation: set `confirm: true` when disabling
+2. Check if environment variable is overriding: `INFRA_PROTECTION_MODE`
+3. Restart Claude Desktop after changing environment variables
+
+### Performance Issues
+
+**Problem:** Slow response times
+
+**Solutions:**
+1. Check API server latency: `k8s_api_latency_check`
+2. Verify cluster health: `k8s_cluster_health`
+3. Check for resource constraints on the cluster
+4. Reduce the number of resources being queried (use label selectors)
+
+**Problem:** Memory issues with large clusters
+
+**Solutions:**
+1. Use label selectors to filter results
+2. Query specific namespaces instead of all namespaces
+3. Use pagination with `limit` parameters where available
+4. Check Node.js memory limits
+
+### Cloud Provider Specific Issues
+
+**Problem:** AKS (Azure) specific errors
+
+**Solutions:**
+1. See [CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md) for known issues
+2. Ensure Azure CLI is authenticated: `az login`
+3. Check AKS cluster connectivity
+4. Verify network policies and firewall rules
+
+**Problem:** GKE (Google Cloud) specific errors
+
+**Solutions:**
+1. Authenticate with gcloud: `gcloud auth login`
+2. Get cluster credentials: `gcloud container clusters get-credentials <cluster-name>`
+3. Check IAM permissions
+4. See [CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)
+
+**Problem:** EKS (AWS) specific errors
+
+**Solutions:**
+1. Configure AWS credentials: `aws configure`
+2. Update kubeconfig: `aws eks update-kubeconfig --name <cluster-name>`
+3. Check IAM role permissions
+4. See [CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. Check the [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for detailed tool information
+2. Review [TOOLS_REFERENCE.md](TOOLS_REFERENCE.md) for tool parameters
+3. Enable debug logging by setting `DEBUG=*` environment variable
+4. Check Claude Desktop logs for detailed error messages
+5. Open an issue on GitHub with:
+   - Error message
+   - Steps to reproduce
+   - Kubernetes version (`kubectl version`)
+   - Node.js version (`node --version`)
+   - MCP server version (from `package.json`)
+
+## FAQ
+
+### General Questions
+
+**Q: What is an MCP server?**
+A: MCP (Model Context Protocol) is a standard that allows AI assistants like Claude to interact with external tools and data sources. This MCP server exposes Kubernetes functionality through the MCP protocol.
+
+**Q: Do I need Kubernetes installed locally?**
+A: No, you need kubectl installed and configured to connect to a Kubernetes cluster. The cluster can be local (minikube, Docker Desktop, kind) or remote (cloud provider, self-managed).
+
+**Q: Can I use this with any Kubernetes cluster?**
+A: Yes, as long as you have kubectl configured with access to the cluster. It works with AKS, GKE, EKS, self-managed clusters, and local development clusters.
+
+**Q: Is this safe to use with production clusters?**
+A: Yes, the server includes infrastructure protection mode that blocks destructive operations by default. You can configure different protection levels based on your needs.
+
+### Configuration Questions
+
+**Q: How do I switch between multiple clusters?**
+A: Use `kubectl config use-context <context-name>` to switch contexts. The MCP server will use whatever context kubectl is currently configured to use.
+
+**Q: Can I use a specific kubeconfig file?**
+A: Yes, set the `KUBECONFIG` environment variable to point to your kubeconfig file before starting Claude Desktop.
+
+**Q: Do I need to restart Claude Desktop after changing kubeconfig?**
+A: Yes, the MCP server reads the kubeconfig when it starts. Restart Claude Desktop after changing your kubeconfig or context.
+
+### Protection Mode Questions
+
+**Q: What is infrastructure protection mode?**
+A: It's a safety feature that blocks destructive operations (delete, drain, cordon, etc.) by default. You must explicitly disable it to perform destructive operations.
+
+**Q: How do I disable protection mode?**
+A: Ask Claude to "disable protection mode" or use the `k8s_toggle_protection_mode` tool with `confirm: true`.
+
+**Q: What are the different protection modes?**
+A: 
+- Infrastructure Protection: Blocks destructive operations
+- Strict Protection: Read-only mode, blocks all modifications
+- No-Delete Protection: Allows updates but blocks deletions
+
+**Q: Can I make protection mode permanent?**
+A: Yes, set the `INFRA_PROTECTION_MODE`, `STRICT_PROTECTION_MODE`, or `NO_DELETE_PROTECTION_MODE` environment variables to `true`.
+
+### Helm Questions
+
+**Q: Do I need Helm installed?**
+A: Only if you want to use the Helm tools. The Kubernetes tools work without Helm.
+
+**Q: How do I install Helm?**
+A: See the installation instructions in the Quick Start section or visit [helm.sh](https://helm.sh/docs/intro/install/).
+
+**Q: Can I use private Helm repositories?**
+A: Yes, you can add private repositories using the `mcp8_k8s_helm_repo_add` tool with authentication.
+
+### Performance Questions
+
+**Q: Will this slow down my cluster?**
+A: The MCP server makes API calls on-demand. It doesn't run continuously in the background. Performance impact is minimal and similar to using kubectl.
+
+**Q: What if I have a large cluster with thousands of resources?**
+A: Use label selectors and namespace filters to limit the scope of queries. The server supports pagination and filtering to handle large clusters efficiently.
+
+**Q: Does this cache results?**
+A: The server includes response caching for frequently accessed data to improve performance.
+
+### Security Questions
+
+**Q: Is my kubeconfig data secure?**
+A: The MCP server reads your kubeconfig but doesn't transmit it externally. It uses the credentials to authenticate with your Kubernetes cluster directly.
+
+**Q: Can I use this with in-cluster authentication?**
+A: Yes, if running inside a pod, the server can use the service account for authentication.
+
+**Q: What permissions does the MCP server need?**
+A: It needs the same permissions as kubectl. For full functionality, use cluster-admin or equivalent permissions. You can restrict permissions based on your needs.
+
+### Troubleshooting Questions
+
+**Q: Claude Desktop doesn't show the Kubernetes tools**
+A: 
+1. Verify the path in `claude_desktop_config.json` is correct
+2. Ensure you ran `npm install` and `npm run build`
+3. Restart Claude Desktop
+4. Check Claude Desktop logs for errors
+
+**Q: I get "Unable to connect to the server" errors**
+A: 
+1. Verify kubectl works: `kubectl get nodes`
+2. Check your current context: `kubectl config current-context`
+3. Ensure you have network access to the cluster
+4. Check if VPN is required
+
+**Q: Tools are blocked by protection mode**
+A: 
+1. Check current protection status with `mcp_server_info`
+2. Temporarily disable: `k8s_toggle_protection_mode { enabled: false, confirm: true }`
+3. Or use the appropriate protection mode for your use case
+
+## License
+
+MIT
