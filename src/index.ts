@@ -44,6 +44,7 @@ import { loadConfig, ServerConfig } from "./config.js";
 import { CacheManager } from "./cache-manager.js";
 import { ToolRegistry } from "./tool-registry.js";
 import { createRequire } from "module";
+import { initializeTelemetry, shutdownTelemetry } from "./telemetry.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
@@ -294,6 +295,9 @@ class K8sMcpServer {
   ]);
 
   constructor() {
+    // Initialize OpenTelemetry first
+    initializeTelemetry();
+
     // Load configuration
     this.config = loadConfig();
     this.infraProtectionEnabled = this.config.infraProtectionEnabled;
@@ -358,7 +362,7 @@ class K8sMcpServer {
       this.registerTools(registerSecurityTools(this.k8sClient));
       this.registerTools(registerMonitoringTools(this.k8sClient));
       this.registerTools(registerConfigTools(this.k8sClient));
-      this.registerTools(registerAdvancedTools(this.k8sClient));
+      this.registerTools(registerAdvancedTools(this.k8sClient, this.cacheManager));
       this.registerTools(registerTemplateTools(this.k8sClient));
       this.registerTools(registerWebSocketTools(this.k8sClient));
       this.registerTools(registerHelmReleaseListTools(this.k8sClient));
@@ -1163,10 +1167,14 @@ class K8sMcpServer {
   }
 
   private setupGracefulShutdown(): void {
-    const shutdown = (signal: string) => {
+    const shutdown = async (signal: string) => {
       console.error(`Received ${signal}, shutting down gracefully...`);
       if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
       if (this.circuitBreakerTimer) clearTimeout(this.circuitBreakerTimer);
+      
+      // Shutdown OpenTelemetry
+      await shutdownTelemetry();
+      
       process.exit(0);
     };
 
@@ -1330,9 +1338,11 @@ class K8sMcpServer {
   }
 
   async start(): Promise<void> {
+    // Default stdio transport (original setup)
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error(`Kubernetes MCP Server v${packageJson.version} running on stdio`);
+    
     console.error(`Tools registered: ${this.toolRegistry.size()}`);
     console.error(`Infrastructure Protection: ${this.infraProtectionEnabled ? "ENABLED" : "DISABLED"}`);
     console.error(`Strict Protection: ${this.strictProtectionEnabled ? "ENABLED" : "DISABLED"}`);

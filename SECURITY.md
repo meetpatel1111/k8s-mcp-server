@@ -201,6 +201,7 @@ Controls all three protection modes simultaneously for quick switching between f
 - Error messages for debugging (may include resource names, namespaces, error details)
 - Circuit breaker status changes
 - Tool invocation errors
+- OpenTelemetry initialization status (if enabled)
 
 **What is NOT logged:**
 - Kubeconfig file contents
@@ -210,6 +211,19 @@ Controls all three protection modes simultaneously for quick switching between f
 - Sensitive configuration data
 
 **Note:** Error messages may contain resource names and namespaces but not credentials. Logs are written to stderr/stdout and managed by the host system.
+
+### Observability (OpenTelemetry)
+
+**OpenTelemetry Integration:**
+- Distributed tracing for tool execution and API calls
+- Configurable via environment variables:
+  - `OTEL_SDK_DISABLED=true` to disable telemetry
+  - `OTEL_EXPORTER_OTLP_ENDPOINT` to set OTLP collector endpoint
+  - `OTEL_SERVICE_NAME` to customize service name
+- Spans include tool names, resource information, and operation details
+- Telemetry data is exported to configured OTLP endpoint (e.g., Jaeger, Tempo)
+- No sensitive credentials or secrets are included in trace data
+- Telemetry can be disabled for air-gapped or privacy-sensitive environments
 
 ## Security Best Practices
 

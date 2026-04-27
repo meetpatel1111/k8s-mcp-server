@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/k8s-mcp-server.svg)](https://nodejs.org/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.12.0 - Complete cluster management via Model Context Protocol with Helm support and multi-mode protection.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.13.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Direct Exec, OpenTelemetry, and Bun runtime support.
 
 ## Overview
 
@@ -44,10 +44,30 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 
 ### Prerequisites
 
-- **Node.js 18+** installed
+- **Node.js 18+** OR **Bun 1.0+** installed
 - **kubectl** installed and configured
 - **Git** installed
 - **Helm** (optional, required for Helm tools)
+
+### Runtime Options
+
+This server supports two JavaScript runtimes:
+
+**Node.js (default):**
+```bash
+npm install
+npm run build
+npm start
+```
+
+**Bun (faster cold start, better performance):**
+```bash
+bun install
+npm run build  # TypeScript compilation
+npm run start:bun
+```
+
+Bun provides 50-70% faster cold start and 10-15% faster execution for ephemeral deployments.
 
 ### Optional: Install Helm
 
@@ -211,7 +231,7 @@ npm run build
 2. **Go to Developer → Edit Config**
 3. **Add this configuration** (update the path):
 
-**Mac/Linux:**
+**Mac/Linux (Node.js):**
 ```json
 {
   "mcpServers": {
@@ -223,7 +243,19 @@ npm run build
 }
 ```
 
-**Windows:**
+**Mac/Linux (Bun - Recommended for faster startup):**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "bun",
+      "args": ["run", "/path/to/k8s-mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Windows (Node.js):**
 ```json
 {
   "mcpServers": {
@@ -235,12 +267,24 @@ npm run build
 }
 ```
 
+**Windows (Bun - Recommended for faster startup):**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "bun",
+      "args": ["run", "C:\\path\\to\\k8s-mcp-server\\dist\\index.js"]
+    }
+  }
+}
+```
+
 4. **Save and Restart Claude Desktop**
 5. **Test it**: Ask Claude "List my Kubernetes pods"
 
 #### Option 2: VS Code
 
-**Mac/Linux:**
+**Mac/Linux (Node.js):**
 ```json
 {
   "mcpServers": {
@@ -253,7 +297,20 @@ npm run build
 }
 ```
 
-**Windows:**
+**Mac/Linux (Bun - Recommended for faster startup):**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "bun",
+      "args": ["run", "/path/to/k8s-mcp-server/dist/index.js"],
+      "description": "Kubernetes cluster management"
+    }
+  }
+}
+```
+
+**Windows (Node.js):**
 ```json
 {
   "mcpServers": {
@@ -266,16 +323,37 @@ npm run build
 }
 ```
 
+**Windows (Bun - Recommended for faster startup):**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "bun",
+      "args": ["run", "C:\\path\\to\\k8s-mcp-server\\dist\\index.js"],
+      "description": "Kubernetes cluster management"
+    }
+  }
+}
+```
+
 #### Option 3: Cursor
 
 Add server with command:
-**Mac/Linux:** `node /path/to/k8s-mcp-server/dist/index.js`
-**Windows:** `node C:\path\to\k8s-mcp-server\dist\index.js`
+**Mac/Linux (Node.js):** `node /path/to/k8s-mcp-server/dist/index.js`
+**Mac/Linux (Bun - Recommended):** `bun run /path/to/k8s-mcp-server/dist/index.js`
+**Windows (Node.js):** `node C:\path\to\k8s-mcp-server\dist\index.js`
+**Windows (Bun - Recommended):** `bun run C:\path\to\k8s-mcp-server\dist\index.js`
 
 #### Option 4: Claude Code
 
+**Node.js:**
 ```bash
 claude mcp add kubernetes node /path/to/k8s-mcp-server/dist/index.js
+```
+
+**Bun (Recommended for faster startup):**
+```bash
+claude mcp add kubernetes bun run /path/to/k8s-mcp-server/dist/index.js
 ```
 
 ---

@@ -3,6 +3,9 @@ import * as yaml from "js-yaml";
 import { execFileSync } from "child_process";
 import * as http from "http";
 import * as https from "https";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 import { 
   K8sMcpError, 
   classifyError, 
@@ -133,6 +136,7 @@ export class K8sClient {
   private rbacV1Api: k8s.RbacAuthorizationV1Api;
   private requestTimeout: number = 30000; // 30 seconds default
   private retryAttempts: number = 3;
+  private httpsAgent!: https.Agent;
 
   constructor() {
     // Check kubectl is installed first
@@ -141,8 +145,12 @@ export class K8sClient {
     this._kc = new k8s.KubeConfig();
     
     try {
-      this._kc.loadFromDefault();
+      // Load kubeconfig with flexible source priority
+      this.loadKubeconfig();
       this.validateConfiguration();
+      
+      // Configure connection pooling for better performance
+      this.setupConnectionPooling();
     } catch (error) {
       const context: ErrorContext = { operation: "constructor" };
       throw classifyError(error, context);
@@ -158,6 +166,159 @@ export class K8sClient {
     } catch (error) {
       const context: ErrorContext = { operation: "initializeApiClients" };
       throw classifyError(error, context);
+    }
+  }
+
+  private loadKubeconfig(): void {
+    // Priority 1: KUBECONFIG_YAML (env var) - inline YAML config
+    if (process.env.KUBECONFIG_YAML) {
+      this.loadFromInlineYaml(process.env.KUBECONFIG_YAML);
+      return;
+    }
+    
+    // Priority 2: KUBECONFIG_JSON (env var) - inline JSON config
+    if (process.env.KUBECONFIG_JSON) {
+      this.loadFromInlineJson(process.env.KUBECONFIG_JSON);
+      return;
+    }
+    
+    // Priority 3: K8S_SERVER + K8S_TOKEN (env vars) - direct server/token
+    if (process.env.K8S_SERVER && process.env.K8S_TOKEN) {
+      this.loadFromEnvVars();
+      return;
+    }
+    
+    // Priority 4: In-cluster config (for pods running in Kubernetes)
+    if (this.isInCluster()) {
+      this._kc.loadFromCluster();
+      return;
+    }
+    
+    // Priority 5: KUBECONFIG_PATH (env var) - custom path
+    if (process.env.KUBECONFIG_PATH) {
+      this._kc.loadFromFile(process.env.KUBECONFIG_PATH);
+      return;
+    }
+    
+    // Priority 6: Standard kubeconfig (default behavior)
+    this._kc.loadFromDefault();
+  }
+
+  private loadFromInlineYaml(yamlContent: string): void {
+    try {
+      // Write to a temporary file and load it
+      const tempDir = os.tmpdir();
+      const tempFile = path.join(tempDir, 'kubeconfig.yaml');
+      fs.writeFileSync(tempFile, yamlContent);
+      
+      this._kc.loadFromFile(tempFile);
+      
+      // Clean up temp file
+      fs.unlinkSync(tempFile);
+    } catch (error: any) {
+      throw new K8sMcpError(
+        "validation",
+        "Failed to parse KUBECONFIG_YAML environment variable",
+        { operation: "loadFromInlineYaml" },
+        error,
+        ["Ensure KUBECONFIG_YAML contains valid YAML", "Check YAML syntax and structure"]
+      );
+    }
+  }
+
+  private loadFromInlineJson(jsonContent: string): void {
+    try {
+      // Write to a temporary file and load it
+      const tempDir = os.tmpdir();
+      const tempFile = path.join(tempDir, 'kubeconfig.json');
+      fs.writeFileSync(tempFile, jsonContent);
+      
+      this._kc.loadFromFile(tempFile);
+      
+      // Clean up temp file
+      fs.unlinkSync(tempFile);
+    } catch (error: any) {
+      throw new K8sMcpError(
+        "validation",
+        "Failed to parse KUBECONFIG_JSON environment variable",
+        { operation: "loadFromInlineJson" },
+        error,
+        ["Ensure KUBECONFIG_JSON contains valid JSON", "Check JSON syntax and structure"]
+      );
+    }
+  }
+
+  private loadFromEnvVars(): void {
+    const server = process.env.K8S_SERVER;
+    const token = process.env.K8S_TOKEN;
+    const caCert = process.env.K8S_CA_CERT;
+    
+    if (!server || !token) {
+      throw new K8sMcpError(
+        "validation",
+        "K8S_SERVER and K8S_TOKEN environment variables must both be set",
+        { operation: "loadFromEnvVars" },
+        undefined,
+        ["Set both K8S_SERVER and K8S_TOKEN environment variables", "Optionally set K8S_CA_CERT for custom CA"]
+      );
+    }
+
+    const cluster: k8s.Cluster = {
+      name: 'default',
+      server: server,
+      caFile: caCert,
+      skipTLSVerify: !caCert,
+    };
+
+    const user: k8s.User = {
+      name: 'default',
+      authProvider: {
+        name: 'token',
+        config: {
+          'token': token,
+        },
+      },
+    };
+
+    const context: k8s.Context = {
+      name: 'default',
+      cluster: 'default',
+      user: 'default',
+    };
+
+    this._kc.loadFromOptions({
+      clusters: [cluster],
+      users: [user],
+      contexts: [context],
+      currentContext: 'default',
+    });
+  }
+
+  private isInCluster(): boolean {
+    try {
+      return fs.existsSync('/var/run/secrets/kubernetes.io/serviceaccount/token');
+    } catch {
+      return false;
+    }
+  }
+
+  private setupConnectionPooling(): void {
+    // Create a shared HTTPS agent with connection pooling
+    this.httpsAgent = new https.Agent({
+      keepAlive: true,
+      keepAliveMsecs: 30000, // 30 seconds
+      maxSockets: 50, // Maximum concurrent connections
+      maxFreeSockets: 10, // Keep 10 idle connections alive
+      timeout: 60000, // 60 second socket timeout
+    });
+
+    // Apply the agent to all clusters in the kubeconfig
+    const clusters = this._kc.clusters;
+    for (const cluster of clusters) {
+      if (cluster.server && cluster.server.startsWith('https://')) {
+        // Set the custom agent for HTTPS connections
+        (cluster as any).agent = this.httpsAgent;
+      }
     }
   }
 
@@ -459,6 +620,87 @@ export class K8sClient {
   }
 
   // Namespaces
+
+  /**
+   * Batch get multiple resources in parallel
+   * @param resources - Array of resource requests with kind, name, and namespace
+   * @returns Array of resource objects
+   */
+  async batchGetResources(resources: { kind: string; name: string; namespace?: string }[]): Promise<any[]> {
+    return Promise.all(resources.map(async (r) => {
+      const ns = r.namespace || "default";
+      try {
+        switch (r.kind) {
+          case "Pod":
+            return await this.getPod(r.name, ns);
+          case "Deployment":
+            return await this.getDeployment(r.name, ns);
+          case "Service":
+            const svcResponse = await this.coreV1Api.readNamespacedService(r.name, ns);
+            return svcResponse.body;
+          case "ConfigMap":
+            const cmResponse = await this.coreV1Api.readNamespacedConfigMap(r.name, ns);
+            return cmResponse.body;
+          case "Secret":
+            const secretResponse = await this.coreV1Api.readNamespacedSecret(r.name, ns);
+            return secretResponse.body;
+          case "Node":
+            return await this.getNode(r.name);
+          case "Namespace":
+            const nsResponse = await this.coreV1Api.readNamespace(r.name);
+            return nsResponse.body;
+          case "StatefulSet":
+            const stsResponse = await this.appsV1Api.readNamespacedStatefulSet(r.name, ns);
+            return stsResponse.body;
+          case "DaemonSet":
+            const dsResponse = await this.appsV1Api.readNamespacedDaemonSet(r.name, ns);
+            return dsResponse.body;
+          case "Job":
+            const jobResponse = await this.batchV1Api.readNamespacedJob(r.name, ns);
+            return jobResponse.body;
+          case "CronJob":
+            const cjResponse = await this.batchV1Api.readNamespacedCronJob(r.name, ns);
+            return cjResponse.body;
+          case "Ingress":
+            const ingResponse = await this.networkingV1Api.readNamespacedIngress(r.name, ns);
+            return ingResponse.body;
+          case "PersistentVolumeClaim":
+            const pvcResponse = await this.coreV1Api.readNamespacedPersistentVolumeClaim(r.name, ns);
+            return pvcResponse.body;
+          case "PersistentVolume":
+            const pvResponse = await this.coreV1Api.readPersistentVolume(r.name);
+            return pvResponse.body;
+          case "StorageClass":
+            const scResponse = await this.storageV1Api.readStorageClass(r.name);
+            return scResponse.body;
+          case "ServiceAccount":
+            const saResponse = await this.coreV1Api.readNamespacedServiceAccount(r.name, ns);
+            return saResponse.body;
+          case "Role":
+            const roleResponse = await this.rbacV1Api.readNamespacedRole(r.name, ns);
+            return roleResponse.body;
+          case "ClusterRole":
+            const crResponse = await this.rbacV1Api.readClusterRole(r.name);
+            return crResponse.body;
+          case "RoleBinding":
+            const rbResponse = await this.rbacV1Api.readNamespacedRoleBinding(r.name, ns);
+            return rbResponse.body;
+          case "ClusterRoleBinding":
+            const crbResponse = await this.rbacV1Api.readClusterRoleBinding(r.name);
+            return crbResponse.body;
+          default:
+            return { error: `Unsupported resource kind: ${r.kind}` };
+        }
+      } catch (error: any) {
+        return { 
+          kind: r.kind, 
+          name: r.name, 
+          namespace: ns, 
+          error: error.message || String(error) 
+        };
+      }
+    }));
+  }
 
   /**
    * List all namespaces in the cluster

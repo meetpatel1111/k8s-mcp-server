@@ -4,9 +4,211 @@ import * as k8s from "@kubernetes/client-node";
 import * as yaml from "js-yaml";
 import { classifyError, ErrorContext } from "../error-handling.js";
 import { validateResourceName, validateNamespace } from "../validators.js";
+import { CacheManager } from "../cache-manager.js";
+import { execFileSync } from "child_process";
 
-export function registerAdvancedTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
+export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: CacheManager): { tool: Tool; handler: Function }[] {
   return [
+    {
+      tool: {
+        name: "k8s_cache_stats",
+        description: "Get cache statistics including hit rate, miss rate, and total requests. Provides visibility into cache effectiveness.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
+      handler: async () => {
+        if (!cacheManager) {
+          return {
+            success: false,
+            error: "Cache manager not available",
+            message: "Cache statistics are not available in this configuration",
+          };
+        }
+        
+        try {
+          const stats = cacheManager.getStats();
+          return {
+            success: true,
+            statistics: stats,
+            summary: {
+              totalEntries: stats.size,
+              hitRate: `${stats.hitRate.toFixed(2)}%`,
+              missRate: `${stats.missRate.toFixed(2)}%`,
+              totalRequests: stats.totalRequests,
+            },
+          };
+        } catch (error) {
+          const context: ErrorContext = { operation: "k8s_cache_stats" };
+          const classified = classifyError(error, context);
+          return { 
+            success: false,
+            error: classified.message,
+            type: classified.type,
+            suggestions: classified.suggestions,
+          };
+        }
+      },
+    },
+    {
+      tool: {
+        name: "k8s_cache_clear",
+        description: "Clear all cached entries and reset statistics. Use this to force fresh data retrieval.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
+      handler: async () => {
+        if (!cacheManager) {
+          return {
+            success: false,
+            error: "Cache manager not available",
+            message: "Cache operations are not available in this configuration",
+          };
+        }
+        
+        try {
+          const statsBefore = cacheManager.getStats();
+          cacheManager.clear();
+          return {
+            success: true,
+            message: "Cache cleared successfully",
+            clearedEntries: statsBefore.size,
+            resetStatistics: {
+              hits: statsBefore.hits,
+              misses: statsBefore.misses,
+            },
+          };
+        } catch (error) {
+          const context: ErrorContext = { operation: "k8s_cache_clear" };
+          const classified = classifyError(error, context);
+          return { 
+            success: false,
+            error: classified.message,
+            type: classified.type,
+            suggestions: classified.suggestions,
+          };
+        }
+      },
+    },
+    {
+      tool: {
+        name: "k8s_batch_get_resources",
+        description: "Get multiple Kubernetes resources in parallel for improved performance. Supports Pod, Deployment, Service, ConfigMap, Secret, Node, Namespace, StatefulSet, DaemonSet, Job, CronJob, Ingress, PVC, PV, StorageClass, ServiceAccount, Role, ClusterRole, RoleBinding, ClusterRoleBinding.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            resources: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  kind: {
+                    type: "string",
+                    description: "Resource kind (e.g., Pod, Deployment, Service)",
+                  },
+                  name: {
+                    type: "string",
+                    description: "Resource name",
+                  },
+                  namespace: {
+                    type: "string",
+                    description: "Resource namespace (defaults to 'default' for namespaced resources)",
+                  },
+                },
+                required: ["kind", "name"],
+              },
+              description: "Array of resources to fetch",
+            },
+          },
+          required: ["resources"],
+        },
+      },
+      handler: async ({ resources }: { resources: { kind: string; name: string; namespace?: string }[] }) => {
+        try {
+          const results = await k8sClient.batchGetResources(resources);
+          return {
+            success: true,
+            count: results.length,
+            resources: results,
+          };
+        } catch (error) {
+          const context: ErrorContext = { operation: "k8s_batch_get_resources" };
+          const classified = classifyError(error, context);
+          return { 
+            success: false,
+            error: classified.message,
+            type: classified.type,
+            suggestions: classified.suggestions,
+          };
+        }
+      },
+    },
+    {
+      tool: {
+        name: "k8s_kubectl",
+        description: "Execute arbitrary kubectl command (fallback for unsupported operations). Use with caution - this is a generic tool for commands not covered by specific tools.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            command: {
+              type: "string",
+              description: "kubectl command to execute (without 'kubectl' prefix, e.g., 'get pods -o wide')",
+            },
+            namespace: {
+              type: "string",
+              description: "Namespace to use (optional, defaults to current context)",
+            },
+            context: {
+              type: "string",
+              description: "Kubeconfig context to use (optional)",
+            },
+          },
+          required: ["command"],
+        },
+      },
+      handler: async ({ command, namespace, context }: { command: string; namespace?: string; context?: string }) => {
+        try {
+          // Build kubectl command
+          let kubectlArgs = command.split(' ');
+          
+          // Add namespace if specified
+          if (namespace) {
+            kubectlArgs = ['-n', namespace, ...kubectlArgs];
+          }
+          
+          // Add context if specified
+          if (context) {
+            kubectlArgs = ['--context', context, ...kubectlArgs];
+          }
+          
+          // Execute kubectl command
+          const output = execFileSync('kubectl', kubectlArgs, {
+            encoding: 'utf-8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+          });
+          
+          return {
+            success: true,
+            command: `kubectl ${kubectlArgs.join(' ')}`,
+            output: output,
+          };
+        } catch (error: any) {
+          const context: ErrorContext = { operation: "k8s_kubectl", details: { command } };
+          const classified = classifyError(error, context);
+          return { 
+            success: false,
+            command: `kubectl ${command}`,
+            error: classified.message,
+            type: classified.type,
+            suggestions: classified.suggestions,
+            stderr: error.stderr || error.message,
+          };
+        }
+      },
+    },
     {
       tool: {
         name: "k8s_raw_api_query",

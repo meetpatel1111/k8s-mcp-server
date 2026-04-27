@@ -1,5 +1,6 @@
 import * as k8s from "@kubernetes/client-node";
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { execFileSync } from "child_process";
 
 import { K8sClient } from "../k8s-client.js";
 import { classifyError, ErrorContext } from "../error-handling.js";
@@ -9,7 +10,7 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
     {
       tool: {
         name: "k8s_exec_pod",
-        description: "Execute command in a pod, or first pod of a deployment/service (returns exec URL for WebSocket connection). Supports format like 'deploy/my-deployment' or 'svc/my-service'.",
+        description: "Execute command in a pod, or first pod of a deployment/service. Supports format like 'deploy/my-deployment' or 'svc/my-service'. Can execute directly (returns output) or return WebSocket URL for interactive sessions.",
         inputSchema: {
           type: "object",
           properties: {
@@ -42,6 +43,12 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
               description: "Pass stdin to container (like kubectl exec -i)",
               default: false,
             },
+            mode: {
+              type: "string",
+              description: "Execution mode: 'direct' executes command and returns output, 'websocket' returns WebSocket URL for interactive session",
+              enum: ["direct", "websocket"],
+              default: "direct",
+            },
           },
           required: ["resource", "namespace"],
         },
@@ -52,7 +59,8 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
         container, 
         command,
         tty,
-        stdin
+        stdin,
+        mode
       }: { 
         resource: string; 
         namespace: string; 
@@ -60,8 +68,10 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
         command?: string[];
         tty?: boolean;
         stdin?: boolean;
+        mode?: string;
       }) => {
         const ns = namespace || "default";
+        const execMode = mode || "direct";
         const coreApi = k8sClient.getCoreV1Api();
         
         try {
@@ -83,10 +93,11 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
           }
           
           let targetPod = resourceName;
-          let kubectlCommand: string;
           
           // Build kubectl command based on resource type
           const flags = `${tty ? ' -t' : ''}${stdin ? ' -i' : ''}${container ? ` -c ${container}` : ''}`;
+          let kubectlCommand: string;
+          
           if (resourceType === "deployment") {
             kubectlCommand = `kubectl exec deploy/${resourceName} -n ${ns}${flags} -- ${(command || ["/bin/sh"]).join(" ")}`;
           } else if (resourceType === "service") {
@@ -95,7 +106,68 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
             kubectlCommand = `kubectl exec ${resourceName} -n ${ns}${flags} -- ${(command || ["/bin/sh"]).join(" ")}`;
           }
 
-          // Create exec request URL for direct pod access
+          // Direct execution mode
+          if (execMode === "direct") {
+            try {
+              // Build kubectl args array for safe execution
+              const kubectlArgs = ["exec"];
+              
+              if (resourceType === "deployment") {
+                kubectlArgs.push("deploy/" + resourceName);
+              } else if (resourceType === "service") {
+                kubectlArgs.push("svc/" + resourceName);
+              } else {
+                kubectlArgs.push(resourceName);
+              }
+              
+              kubectlArgs.push("-n", ns);
+              
+              if (tty) kubectlArgs.push("-t");
+              if (stdin) kubectlArgs.push("-i");
+              if (container) {
+                kubectlArgs.push("-c", container);
+              }
+              
+              kubectlArgs.push("--");
+              kubectlArgs.push(...(command || ["/bin/sh"]));
+              
+              // Execute kubectl command directly
+              const output = execFileSync("kubectl", kubectlArgs, {
+                encoding: "utf8",
+                maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+              });
+              
+              return {
+                success: true,
+                mode: "direct",
+                output,
+                resourceType,
+                resourceName,
+                targetPod,
+                namespace: ns,
+                container,
+                command: command || ["/bin/sh"],
+                tty: tty || false,
+                stdin: stdin || false,
+              };
+            } catch (execError: any) {
+              // If direct execution fails, provide fallback
+              return {
+                success: false,
+                mode: "direct",
+                error: execError.message || "Command execution failed",
+                kubectlCommand,
+                suggestions: [
+                  "Ensure kubectl is installed and in PATH",
+                  "Check kubeconfig is properly configured",
+                  "Verify the pod/deployment/service exists",
+                  "Try using mode='websocket' for interactive sessions",
+                ],
+              };
+            }
+          }
+          
+          // WebSocket mode (original behavior)
           const execUrl = await coreApi.connectGetNamespacedPodExec(
             targetPod,
             ns,
@@ -108,6 +180,8 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
           );
 
           return {
+            success: true,
+            mode: "websocket",
             execInfo: {
               resourceType,
               resourceName,

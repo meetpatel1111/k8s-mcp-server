@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the k8s-mcp-server! This document
 
 ### Prerequisites
 
-- Node.js 18+ installed
+- Node.js 18+ OR Bun 1.0+ installed
 - npm or yarn package manager
 - Git
 - kubectl (for testing against a real cluster)
