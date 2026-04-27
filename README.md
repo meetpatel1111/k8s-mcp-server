@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/k8s-mcp-server.svg)](https://nodejs.org/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.13.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Direct Exec, OpenTelemetry, and Bun runtime support.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.16.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 ## Overview
 
@@ -22,7 +22,7 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 | **Workloads** | Deployments, StatefulSets, DaemonSets, ReplicaSets, Jobs, CronJobs, scaling, rolling restart, rollout management, autoscaling |
 | **Networking** | Services, endpoints, ingresses, network policies, DNS test, service topology |
 | **Storage** | PersistentVolumes, PVCs, StorageClasses, unbound PVC detection, storage summary |
-| **Security & RBAC** | ServiceAccounts, Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, Secrets, ConfigMaps, privileged pod detection, certificates |
+| **Security & RBAC** | ServiceAccounts, Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, Secrets, ConfigMaps, privileged pod detection, certificates, **Secret Scrubbing** (PII/credential redaction) |
 | **Monitoring** | Events, resource quotas, limit ranges, crash loop detection, pod/node metrics, health score, optimization suggestions |
 | **Configuration** | Apply manifests, export YAML, validate manifests, namespace management, patch, edit, diff, wait, watch |
 | **Advanced** | Raw API queries, pod failure analysis, bulk operations, orphaned resource detection, resource age reports |
@@ -68,6 +68,24 @@ npm run start:bun
 ```
 
 Bun provides 50-70% faster cold start and 10-15% faster execution for ephemeral deployments.
+
+### Build Options
+
+**Optimized build (default, production):**
+```bash
+npm run build
+```
+- Uses esbuild for tree-shaking and minification
+- Bundle size: ~438kb
+- Best for production deployment
+
+**Fast build (development):**
+```bash
+npm run build:dev
+```
+- TypeScript compilation only
+- Bundle size: ~5MB
+- Faster builds, easier debugging
 
 ### Optional: Install Helm
 
@@ -354,6 +372,33 @@ claude mcp add kubernetes node /path/to/k8s-mcp-server/dist/index.js
 **Bun (Recommended for faster startup):**
 ```bash
 claude mcp add kubernetes bun run /path/to/k8s-mcp-server/dist/index.js
+```
+
+#### Option 5: Web Deployment (SSE Transport)
+
+For web-based clients, use the SSE transport:
+
+```bash
+# Set environment variables
+export TRANSPORT=sse
+export PORT=3000
+
+# Start the server
+node dist/index.js
+```
+
+The server will start an HTTP server with SSE support on the specified port.
+
+**Endpoints:**
+- `GET /health` - Health check
+- `GET /sse` - SSE connection for MCP
+- `POST /message` - Message endpoint for client requests
+
+**Windows:**
+```powershell
+$env:TRANSPORT="sse"
+$env:PORT="3000"
+node dist\index.js
 ```
 
 ---
@@ -691,8 +736,8 @@ Use the k8s_rollback_deployment tool with:
 |----------|-------------|---------|
 | `KUBECONFIG` | Path to kubeconfig file | `~/.kube/config` |
 | `INFRA_PROTECTION_MODE` | Enable infrastructure protection (blocks destructive operations) | `true` (enabled) |
-| `STRICT_PROTECTION_MODE` | Enable strict protection (blocks all non-read operations) | `false` (disabled) |
-| `NO_DELETE_PROTECTION_MODE` | Enable no-delete protection (blocks deletions only, allows updates) | `false` (disabled) |
+| `STRICT_PROTECTION_MODE` | Enable strict protection (blocks all non-read operations) | `true` (enabled) |
+| `NO_DELETE_PROTECTION_MODE` | Enable no-delete protection (blocks deletions only, allows updates) | `true` (enabled) |
 
 ### Protection Modes
 
@@ -701,14 +746,14 @@ Three configurable protection modes for safety:
 | Mode | Description | Default |
 |------|-------------|---------|
 | **Infrastructure Protection** | Blocks all destructive operations (delete, drain, cordon, scale, etc.) | `enabled` |
-| **Strict Protection** | Blocks all non-read-only operations (read-only mode) | `disabled` |
-| **No Delete Protection** | Blocks only deletion operations, allows updates/changes | `disabled` |
+| **Strict Protection** | Blocks all non-read-only operations (read-only mode) | `enabled` |
+| **No Delete Protection** | Blocks only deletion operations, allows updates/changes | `enabled` |
 
 **Toggle via environment variables:**
 ```bash
 INFRA_PROTECTION_MODE=false npm start          # Disable infrastructure protection
-STRICT_PROTECTION_MODE=true npm start          # Enable strict read-only mode
-NO_DELETE_PROTECTION_MODE=true npm start       # Enable no-delete mode
+STRICT_PROTECTION_MODE=false npm start         # Disable strict read-only mode
+NO_DELETE_PROTECTION_MODE=false npm start      # Disable no-delete mode
 ```
 
 **Toggle via tools:**
@@ -716,13 +761,52 @@ NO_DELETE_PROTECTION_MODE=true npm start       # Enable no-delete mode
 k8s_toggle_protection_mode { enabled: false, confirm: true }           # Infrastructure toggle
 k8s_toggle_strict_protection_mode { enabled: true }                     # Strict mode toggle
 k8s_toggle_no_delete_mode { enabled: true }                           # No-delete mode toggle
-k8s_toggle_all_protection_modes { infrastructure: true, strict: false, noDelete: true }  # Master toggle
+k8s_toggle_all_protection_modes { infrastructure: false, strict: false, noDelete: false }  # Master toggle - disable all to enable full access
 ```
 
 **Check status:**
 ```
 Use mcp_server_info or mcp_health_check to see current protection mode status
 ```
+
+### Secret Scrubbing (Data Redaction)
+
+Prevent accidental exposure of sensitive data in tool outputs:
+
+**What it does:**
+- Automatically detects and redacts passwords, tokens, API keys, PII in tool outputs
+- 40+ detection patterns for cloud credentials, cryptographic keys, PII
+- Optional opt-in feature (set `scrub: true` on supported tools)
+
+**Supported tools:**
+- `k8s_get_logs` - Pod logs with sensitive data redacted
+- `k8s_exec_pod` - Command output scrubbing
+- `k8s_kubectl` - kubectl command output scrubbing
+- `k8s_describe_pod` - Pod YAML scrubbing
+- `k8s_helm_values` - Helm values redaction
+- `k8s_helm_template` - Rendered template scrubbing
+- `k8s_get_configmap` - ConfigMap data scrubbing
+- `k8s_export_resource` - Resource YAML redaction
+- `k8s_pod_log_search` - Log search results scrubbing
+
+**Example usage:**
+```bash
+# Get logs with secret scrubbing
+k8s_get_logs name=my-pod namespace=default scrub=true
+
+# Export ConfigMap with sensitive values redacted
+k8s_export_resource kind=ConfigMap name=my-config scrub=true
+
+# Check response for scrubbed: true flag indicating redaction was applied
+```
+
+**Detects and redacts:**
+- Passwords, tokens, API keys (AWS, GCP, Azure, GitHub, Slack, Stripe, OpenAI)
+- JWT tokens, PEM private keys, certificates
+- Database connection strings, Docker registry auth
+- Credit cards, SSN, email addresses, IP addresses
+
+See [SECURITY.md](SECURITY.md) for detailed documentation.
 
 ## Architecture
 

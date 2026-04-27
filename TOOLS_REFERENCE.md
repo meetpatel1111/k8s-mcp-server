@@ -1,6 +1,6 @@
 # K8s MCP Server - Complete Tool Reference
 
-**Version: 0.13.0** | **Total Tools: 262+**
+**Version: 0.14.0** | **Total Tools: 262+**
 
 This document provides comprehensive reference for all tools in the Kubernetes MCP Server, including tool catalogs, kubectl mappings, and natural language patterns.
 

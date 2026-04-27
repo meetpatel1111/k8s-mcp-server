@@ -5,7 +5,93 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.0] - 2026-04-27
+
+### Added
+- **Secret Scrubbing** - Automatic PII and credential redaction in tool outputs
+  - New `scrub` parameter on sensitive tools (opt-in, default: false)
+  - 40+ detection patterns for passwords, tokens, API keys, cloud credentials
+  - Covers AWS, GCP, Azure, GitHub, Slack, Stripe, OpenAI keys
+  - JWT tokens, PEM private keys, certificates, database connection strings
+  - Credit cards, SSN, email addresses, IP addresses (internal and public)
+  - Applied to: `k8s_get_logs`, `k8s_exec_pod`, `k8s_kubectl`, `k8s_describe_pod`, `k8s_helm_values`, `k8s_helm_template`, `k8s_get_configmap`, `k8s_export_resource`, `k8s_pod_log_search`
+  - Response includes `scrubbed: true/false` flag to indicate if redaction was applied
+  - New utility: `src/utils/secret-scrubber.ts` with `scrubSensitiveData()` function
+
+- **Audit Logging Framework** - Foundation for compliance and security tracking
+  - New `src/audit-logger.ts` with `AuditLogger` class
+  - Supports file-based audit trails with structured JSON logs
+  - Tracks tool executions, data access, and security events
+  - Configurable via `AUDIT_LOG_ENABLED` and `AUDIT_LOG_PATH` environment variables
+
+### Security
+- Enhanced data exposure protection across all output-generating tools
+- Reduced risk of accidental secret leakage in logs and command outputs
+
+### Changed
+- **Breaking: All Protection Modes Enabled by Default**
+  - `STRICT_PROTECTION_MODE` now defaults to `true` (was `false`)
+  - `NO_DELETE_PROTECTION_MODE` now defaults to `true` (was `false`)
+  - Server starts in maximum security mode - read-only by default
+  - Users must explicitly disable protection modes to enable modifications
+  - Updated documentation and environment variable examples to reflect new defaults
+
+## [0.15.0] - 2026-04-27
+
+### Added
+- **API Documentation Generator** - Auto-generate API docs from tool schemas
+  - New `npm run generate-docs` script to regenerate documentation
+  - Created `scripts/generate-api-docs.ts` documentation generator
+  - Generates `API_DOCUMENTATION.md` with 259+ tools across 32 categories
+  - Documents tool names, descriptions, and input schemas with parameter types
+  - Includes table of contents and tool counts per category
+
+### Changed
+- **Test Coverage Expansion** - Comprehensive test coverage for all helm-tools categories
+  - Created 19 separate test files for helm-tools (chart-management, chart-template, dependency-management, plugin-management, registry-management, release-get-info, release-get-values, release-history, release-rollback, release-test, show-chart, environment, release-install, release-list, release-status, release-uninstall, release-upgrade, search-hub, repo-management)
+  - Added 91 new test cases validating tool registration, descriptions, input schemas, and handlers
+  - Total test count increased to 382 tests across 40 test suites
+  - Mirrors k8s-tools test structure for consistency
+
+### Fixed
+- **Port Forward Default Mode** - Fixed inconsistent default mode for `k8s_port_forward`
+  - Schema and handler now both default to "direct" mode
+  - Previously schema said "direct" but handler defaulted to "command"
+  - Direct mode spawns kubectl port-forward in background and returns PID
+
+## [0.14.0] - 2026-04-27
+
+### Added
+- **SSE Transport** - Server-Sent Events support for web deployment
+  - New `TRANSPORT` environment variable to select transport mode (stdio/sse)
+  - New `PORT` environment variable for HTTP server port (default: 3000)
+  - HTTP server with CORS support for web clients
+  - Endpoints: `/health`, `/sse`, `/message`
+  - Express dependency for HTTP server
+  - Updated README with SSE deployment instructions
+- **Bundle Size Optimization** - esbuild integration for smaller bundles
+  - New `build:dev` script for fast TypeScript compilation
+  - Default `build` script now uses esbuild for optimized bundle
+  - Bundle size reduced to ~438kb (from ~5MB)
+  - Tree-shaking and minification enabled
+  - All heavy dependencies externalized (K8s SDK, OpenTelemetry, Express)
+- **Port Forward Direct Execution** - Immediate port forwarding support
+  - New `mode` parameter for `k8s_port_forward` tool
+  - `mode="direct"` (default) spawns kubectl port-forward in background
+  - `mode="command"` returns kubectl command string
+  - Returns process PID for management
+  - Aligned with `k8s_exec_pod` default behavior
+
+### Changed
+- **Default Execution Modes** - Consistent direct execution defaults
+  - `k8s_exec_pod` defaults to "direct" mode
+  - `k8s_port_forward` defaults to "direct" mode
+  - Users can explicitly set `mode="command"` for command string output
+
+### Dependencies
+- Added `express@^4.18.2` for SSE transport
+- Added `@types/express@^4.17.21` for TypeScript support
+- Added `esbuild@^0.19.0` for bundle optimization
 
 ## [0.13.0] - 2026-04-27
 
@@ -116,7 +202,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `k8s_debug_node` and `k8s_node_pressure_status` for node diagnostics
 - `k8s_restart_deployment`, `k8s_restart_statefulset`, `k8s_restart_daemonset`
 
-## [0.7.0] - 2026-03-25
+## [0.7.0] - 2026-04-05
 
 ### Added
 - `k8s_check_privileged_pods` for security auditing
@@ -130,7 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Enhanced RBAC tools with comprehensive listing and detail views
 
-## [0.6.0] - 2026-03-15
+## [0.6.0] - 2026-04-04
 
 ### Added
 - Complete Kubernetes resource coverage
@@ -144,7 +230,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `k8s_apply_manifest` and `k8s_export_resource`
 - `k8s_find_crashloop_pods` and `k8s_find_unhealthy_pods`
 
-## [0.5.0] - 2026-03-01
+## [0.5.0] - 2026-04-03
 
 ### Added
 - Production-ready MCP server
@@ -154,7 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - K8sClient with retry logic and timeout protection
 - Comprehensive documentation: README, API docs, kubectl mappings
 
-## [0.4.0] - 2026-02-20
+## [0.4.0] - 2026-04-02
 
 ### Added
 - Beta release with core functionality
@@ -166,7 +252,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactored from proof-of-concept to production structure
 
-## [0.3.0] - 2026-02-10
+## [0.3.0] - 2026-04-02
 
 ### Added
 - Expanded tool coverage for alpha testing
@@ -175,7 +261,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Job and CronJob management
 - Namespace operations
 
-## [0.2.0] - 2026-02-01
+## [0.2.0] - 2026-04-01
 
 ### Added
 - Alpha release with basic Kubernetes tools
@@ -184,7 +270,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cluster context management
 - TypeScript project structure
 
-## [0.1.0] - 2026-01-20
+## [0.1.0] - 2026-04-01
 
 ### Added
 - Initial proof-of-concept

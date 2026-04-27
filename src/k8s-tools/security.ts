@@ -3,6 +3,7 @@ import { K8sClient } from "../k8s-client.js";
 import * as k8s from "@kubernetes/client-node";
 import { classifyError, ErrorContext } from "../error-handling.js";
 import { validateResourceName } from "../validators.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
   return [
@@ -650,18 +651,31 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
               description: "Namespace of the ConfigMap",
               default: "default",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in ConfigMap data",
+              default: false,
+            },
           },
           required: ["name"],
         },
       },
-      handler: async ({ name, namespace }: { name: string; namespace?: string }) => {
+      handler: async ({ name, namespace, scrub }: { name: string; namespace?: string; scrub?: boolean }) => {
         const coreApi = k8sClient.getCoreV1Api();
         const cm = await coreApi.readNamespacedConfigMap(name, namespace || "default");
+        
+        let data = cm.body.data;
+        if (scrub && data) {
+          data = Object.fromEntries(
+            Object.entries(data).map(([k, v]) => [k, scrubSensitiveData(v || "")])
+          );
+        }
         
         return {
           name: cm.body.metadata?.name,
           namespace: cm.body.metadata?.namespace,
-          data: cm.body.data,
+          data,
+          scrubbed: scrub || false,
           binaryData: cm.body.binaryData ? "<binary data present>" : null,
           immutable: cm.body.immutable,
           age: cm.body.metadata?.creationTimestamp,

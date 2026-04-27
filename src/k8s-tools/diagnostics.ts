@@ -2,6 +2,7 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { K8sClient } from "../k8s-client.js";
 import * as k8s from "@kubernetes/client-node";
 import { classifyError, ErrorContext } from "../error-handling.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 function getAge(timestamp: Date | string | undefined): string {
   if (!timestamp) return "unknown";
@@ -279,16 +280,22 @@ export function registerDiagnosticsTools(k8sClient: K8sClient): { tool: Tool; ha
               description: "Maximum number of pods to search",
               default: 20,
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in matched log lines (passwords, tokens, emails, IPs)",
+              default: false,
+            },
           },
           required: ["pattern"],
         },
       },
-      handler: async ({ pattern, namespace, labelSelector, tailLines, maxPods }: {
+      handler: async ({ pattern, namespace, labelSelector, tailLines, maxPods, scrub }: {
         pattern: string;
         namespace?: string;
         labelSelector?: string;
         tailLines?: number;
         maxPods?: number;
+        scrub?: boolean;
       }) => {
         const ns = namespace || "default";
         const lines = tailLines || 500;
@@ -325,7 +332,7 @@ export function registerDiagnosticsTools(k8sClient: K8sClient): { tool: Tool; ha
                   matchCount: matchingLines.length,
                   matches: matchingLines.slice(0, 10).map(m => ({
                     line: m.lineNumber,
-                    text: m.line.substring(0, 200),
+                    text: scrub ? scrubSensitiveData(m.line.substring(0, 200)) : m.line.substring(0, 200),
                   })),
                 });
               }
@@ -342,6 +349,7 @@ export function registerDiagnosticsTools(k8sClient: K8sClient): { tool: Tool; ha
             podsSearched: pods.length,
             podsWithMatches: matches.length,
             totalMatches: matches.reduce((sum, m) => sum + m.matchCount, 0),
+            scrub: scrub || false,
             results: matches,
           };
         } catch (error) {

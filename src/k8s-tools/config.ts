@@ -4,6 +4,7 @@ import * as yaml from "js-yaml";
 import * as k8s from "@kubernetes/client-node";
 import { classifyError, validateYamlManifest, ErrorContext } from "../error-handling.js";
 import { validateResourceName, validateNamespace } from "../validators.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
   return [
@@ -66,11 +67,16 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               description: "Namespace (if namespaced resource)",
               default: "default",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in exported YAML",
+              default: false,
+            },
           },
           required: ["kind", "name"],
         },
       },
-      handler: async ({ kind, name, namespace }: { kind: string; name: string; namespace?: string }) => {
+      handler: async ({ kind, name, namespace, scrub }: { kind: string; name: string; namespace?: string; scrub?: boolean }) => {
         const ns = namespace || "default";
         let resource: any;
 
@@ -161,11 +167,17 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
           delete resource.metadata?.managedFields;
           delete resource.status;
           
+          let yamlOutput = yaml.dump(resource, { indent: 2 });
+          if (scrub) {
+            yamlOutput = scrubSensitiveData(yamlOutput);
+          }
+          
           return {
             kind,
             name,
             namespace: ns,
-            yaml: yaml.dump(resource, { indent: 2 }),
+            scrubbed: scrub || false,
+            yaml: yamlOutput,
           };
         } catch (error) {
           const context: ErrorContext = { operation: "k8s_export_resource", resource: name, namespace: ns };

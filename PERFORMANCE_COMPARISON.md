@@ -1,7 +1,7 @@
 # MCP Kubernetes Server Performance & Advanced Features Comparison
 
 **Comparison Date:** April 27, 2026  
-**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.13.0
+**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.14.0
 
 **Repository Links:**
 - [k8s-mcp-server](https://github.com/meetpatel1111/k8s-mcp-server) - meetpatel1111
@@ -48,15 +48,15 @@
 
 ### Performance Reality
 
-| Metric | mcp-server-kubernetes | k8s-mcp-server v0.13.0 | Why |
-|--------|---------------------|------------------------|-----|
-| **Cold Start** | 50-100ms | 50-150ms (Bun) / 200-500ms (Node) | Both support Bun, k8s-mcp-server has more features |
-| **Request Latency (Read/Write)** | 80-150ms | 8-40ms | Process spawn vs direct API call + connection pooling |
-| **Request Latency (Exec)** | 80-150ms | 80-150ms | Both use execFileSync for direct execution |
-| **Request Latency (Port-Forward)** | 80-150ms | N/A (returns command) | k8s-mcp-server returns command string |
-| **Cached Reads** | N/A | 1-5ms | k8s-mcp-server has caching with hit/miss tracking |
-| **Batch Operations** | Sequential | Parallel (20-30% faster) | k8s-mcp-server has Promise.all batching |
-| **Throughput** | 10-20 req/s | 60-120 req/s | Process overhead vs API client + pooling |
+| Metric                             | mcp-server-kubernetes | k8s-mcp-server v0.13.0            | Why                                                   |
+| ------------------------------------| -----------------------| -----------------------------------| -------------------------------------------------------|
+| **Cold Start**                     | 50-100ms              | 50-150ms (Bun) / 200-500ms (Node) | Both support Bun, k8s-mcp-server has more features    |
+| **Request Latency (Read/Write)**   | 80-150ms              | 8-40ms                            | Process spawn vs direct API call + connection pooling |
+| **Request Latency (Exec)**         | 80-150ms              | 80-150ms                          | Both use execFileSync for direct execution            |
+| **Request Latency (Port-Forward)** | 80-150ms              | N/A (returns command)             | k8s-mcp-server returns command string                 |
+| **Cached Reads**                   | N/A                   | 1-5ms                             | k8s-mcp-server has caching with hit/miss tracking     |
+| **Batch Operations**               | Sequential            | Parallel (20-30% faster)          | k8s-mcp-server has Promise.all batching               |
+| **Throughput**                     | 10-20 req/s           | 60-120 req/s                      | Process overhead vs API client + pooling              |
 
 **Insight:** For long-running processes (typical MCP servers), cold start difference is negligible. For read/write operations, k8s-mcp-server wins significantly with direct API calls. For exec/port-forward, k8s-mcp-server provides command generation (user executes manually), while mcp-server-kubernetes executes directly.
 

@@ -122,7 +122,7 @@ export INFRA_PROTECTION_MODE=false # Disable protection
 
 **Configuration:**
 ```bash
-export STRICT_PROTECTION_MODE=true  # Enable (default: false)
+export STRICT_PROTECTION_MODE=true  # Enable (default: true)
 export STRICT_PROTECTION_MODE=false # Disable
 ```
 
@@ -139,7 +139,7 @@ export STRICT_PROTECTION_MODE=false # Disable
 
 **Configuration:**
 ```bash
-export NO_DELETE_PROTECTION_MODE=true  # Enable (default: false)
+export NO_DELETE_PROTECTION_MODE=true  # Enable (default: true)
 export NO_DELETE_PROTECTION_MODE=false # Disable
 ```
 
@@ -211,6 +211,73 @@ Controls all three protection modes simultaneously for quick switching between f
 - Sensitive configuration data
 
 **Note:** Error messages may contain resource names and namespaces but not credentials. Logs are written to stderr/stdout and managed by the host system.
+
+### Secret Scrubbing (PII/Credential Redaction)
+
+**Purpose:** Automatically detect and redact sensitive data in tool outputs to prevent accidental credential exposure to Claude.
+
+**How it works:**
+- Optional `scrub` parameter available on sensitive tools (default: `false` for backwards compatibility)
+- When enabled, output is scanned against 40+ detection patterns
+- Detected sensitive values are replaced with redaction markers (e.g., `[AWS_ACCESS_KEY_REDACTED]`, `[PASSWORD_REDACTED]`)
+- Response includes `scrubbed: true/false` flag to indicate if redaction was applied
+
+**Tools supporting scrub:**
+- `k8s_get_logs` - Pod/deployment/service logs
+- `k8s_exec_pod` - Command execution output
+- `k8s_kubectl` - Arbitrary kubectl command output
+- `k8s_describe_pod` - Full pod YAML description
+- `k8s_helm_values` - Helm release values
+- `k8s_helm_template` - Rendered Helm templates
+- `k8s_get_configmap` - ConfigMap data
+- `k8s_export_resource` - Exported resource YAML
+- `k8s_pod_log_search` - Log search results
+
+**Detection patterns include:**
+- **Passwords:** password, passwd, pwd, pass, adminpass, rootpass (case-insensitive)
+- **Tokens:** access_token, refresh_token, auth_token, api_token, bearer_token, JWT tokens
+- **API Keys:** api_key, secret_key, private_key, client_secret, app_key
+- **Cloud Credentials:**
+  - AWS: AKIA, ASIA access keys (16 chars), 40-char secret keys
+  - GCP: AIza... API keys (35 chars)
+  - Azure: GUIDs for service principals
+  - GitHub: ghp_, gho_, ghu_, ghs_, ghr_ tokens
+  - Slack: xoxb-, xoxa-, xoxp-, xoxr-, xoxs- tokens
+  - Stripe: sk_live_, pk_live_, sk_test_, pk_test_ keys
+  - OpenAI: sk-... API keys
+- **Cryptographic:** PEM private/public keys, X.509 certificates, hex tokens (32-64 chars)
+- **Authentication:** Bearer tokens, Basic Auth, OAuth tokens, database connection strings
+- **PII:** Credit cards, SSN (XXX-XX-XXXX), email addresses, phone numbers
+- **Network:** Internal IPs (10.x, 172.16-31.x, 192.168.x), all IPv4 addresses
+- **Kubernetes:** tls.crt, tls.key, ca.crt data fields, Docker registry auth
+
+**Example usage:**
+```bash
+# Get logs with secret scrubbing enabled
+k8s_get_logs name=my-pod namespace=default scrub=true
+
+# Export resource with sensitive data redacted
+k8s_export_resource kind=ConfigMap name=my-config scrub=true
+
+# Helm values with credential masking
+k8s_helm_values release=my-release scrubSecrets=true
+```
+
+**Redaction markers:**
+- `[PASSWORD_REDACTED]`
+- `[AWS_ACCESS_KEY_REDACTED]`
+- `[JWT_TOKEN_REDACTED]`
+- `[EMAIL_REDACTED]`
+- `[CREDIT_CARD_REDACTED]`
+- `[PRIVATE_KEY_REDACTED]`
+- And 35+ more specific markers
+
+**Limitations:**
+- Pattern-based detection (may have false positives/negatives)
+- Binary data is not scrubbed
+- Very short secrets (< 8 chars) may not be detected
+- Custom/obscure credential formats may not be recognized
+- Opt-in feature - must explicitly set `scrub=true` on each tool call
 
 ### Observability (OpenTelemetry)
 

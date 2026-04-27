@@ -39,12 +39,14 @@ import { registerHelmPluginManagementTools } from "./helm-tools/plugin-managemen
 import { registerHelmRegistryManagementTools } from "./helm-tools/registry-management.js";
 import { registerHelmEnvironmentTools } from "./helm-tools/environment.js";
 import { registerDiagnosticsTools } from "./k8s-tools/diagnostics.js";
+import { registerMultiClusterTools } from "./k8s-tools/multi-cluster.js";
 import { classifyError, ErrorContext } from "./error-handling.js";
 import { loadConfig, ServerConfig } from "./config.js";
 import { CacheManager } from "./cache-manager.js";
 import { ToolRegistry } from "./tool-registry.js";
 import { createRequire } from "module";
 import { initializeTelemetry, shutdownTelemetry } from "./telemetry.js";
+import { startSSEServer } from "./sse-transport.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
@@ -385,6 +387,7 @@ class K8sMcpServer {
       this.registerTools(registerHelmRegistryManagementTools(this.k8sClient));
       this.registerTools(registerHelmEnvironmentTools(this.k8sClient));
       this.registerTools(registerDiagnosticsTools(this.k8sClient));
+      this.registerTools(registerMultiClusterTools(this.k8sClient));
 
       // Register server management tools
       this.registerServerTools();
@@ -1338,10 +1341,19 @@ class K8sMcpServer {
   }
 
   async start(): Promise<void> {
-    // Default stdio transport (original setup)
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error(`Kubernetes MCP Server v${packageJson.version} running on stdio`);
+    const transport = process.env.TRANSPORT || 'stdio';
+    const port = parseInt(process.env.PORT || '3000', 10);
+
+    if (transport === 'sse') {
+      // SSE transport for web deployment - creates new Server instance per connection
+      await startSSEServer(port);
+      console.error(`Kubernetes MCP Server v${packageJson.version} running on SSE (port ${port})`);
+    } else {
+      // Default stdio transport
+      const stdioTransport = new StdioServerTransport();
+      await this.server.connect(stdioTransport);
+      console.error(`Kubernetes MCP Server v${packageJson.version} running on stdio`);
+    }
     
     console.error(`Tools registered: ${this.toolRegistry.size()}`);
     console.error(`Infrastructure Protection: ${this.infraProtectionEnabled ? "ENABLED" : "DISABLED"}`);

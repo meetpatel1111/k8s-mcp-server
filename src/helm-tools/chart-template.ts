@@ -2,6 +2,7 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { K8sClient } from "../k8s-client.js";
 import { classifyError, ErrorContext } from "../error-handling.js";
 import { sanitizeShellArg } from "../utils/shell-sanitizer.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 import { isHelmInstalled, runHelm, sanitizeHelmNamespace, helmUnavailableResponse } from "./common.js";
 
 export function registerHelmChartTemplateTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
@@ -163,6 +164,11 @@ export function registerHelmChartTemplateTools(k8sClient: K8sClient): { tool: To
               description: "Verify the package before using it",
               default: false,
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in rendered templates (passwords, tokens, emails, IPs)",
+              default: false,
+            },
           },
           required: ["chart"],
         },
@@ -200,6 +206,7 @@ export function registerHelmChartTemplateTools(k8sClient: K8sClient): { tool: To
         password,
         keyring,
         verify,
+        scrub,
       }: {
         chart: string;
         release?: string;
@@ -233,6 +240,7 @@ export function registerHelmChartTemplateTools(k8sClient: K8sClient): { tool: To
         password?: string;
         keyring?: string;
         verify?: boolean;
+        scrub?: boolean;
       }) => {
         if (!helmAvailable) return helmUnavailableResponse;
         try {
@@ -270,12 +278,16 @@ export function registerHelmChartTemplateTools(k8sClient: K8sClient): { tool: To
           if (password) args.push("--password", sanitizeShellArg(password));
           if (keyring) args.push("--keyring", sanitizeShellArg(keyring));
           if (verify) args.push("--verify");
-          const output = runHelm(args, 60000);
+          let output = runHelm(args, 60000);
+          if (scrub) {
+            output = scrubSensitiveData(output);
+          }
           return {
             success: true,
             chart: sanitizedChart,
             namespace: ns,
             release: release || "RELEASE-NAME",
+            scrubbed: scrub || false,
             templates: output,
           };
         } catch (error) {

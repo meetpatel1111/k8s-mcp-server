@@ -3,6 +3,7 @@ import { K8sClient } from "../k8s-client.js";
 import { classifyError, ErrorContext } from "../error-handling.js";
 import { sanitizeShellArg } from "../utils/shell-sanitizer.js";
 import { isHelmInstalled, runHelm, parseHelmJson, sanitizeHelmNamespace, sanitizeHelmRelease, helmUnavailableResponse } from "./common.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 export function registerHelmReleaseGetValuesTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
   const helmAvailable = isHelmInstalled();
@@ -38,6 +39,11 @@ export function registerHelmReleaseGetValuesTools(k8sClient: K8sClient): { tool:
               description: "Prints the output in the specified format (table, json, yaml)",
               enum: ["table", "json", "yaml"],
             },
+            scrubSecrets: {
+              type: "boolean",
+              description: "Mask potential secrets in values output (passwords, tokens, keys)",
+              default: false,
+            },
           },
           required: ["release"],
         },
@@ -48,12 +54,14 @@ export function registerHelmReleaseGetValuesTools(k8sClient: K8sClient): { tool:
         revision,
         allValues,
         output,
+        scrubSecrets,
       }: {
         release: string;
         namespace?: string;
         revision?: number;
         allValues?: boolean;
         output?: string;
+        scrubSecrets?: boolean;
       }) => {
         if (!helmAvailable) return helmUnavailableResponse;
         try {
@@ -63,12 +71,14 @@ export function registerHelmReleaseGetValuesTools(k8sClient: K8sClient): { tool:
           if (allValues) args.push("--all");
           if (revision && revision > 0) args.push("--revision", String(revision));
           if (output) args.push("--output", sanitizeShellArg(output));
-          const values = parseHelmJson(args);
+          const rawValues = parseHelmJson(args);
+          const values = scrubSecrets ? scrubSensitiveData(JSON.stringify(rawValues)) : rawValues;
           return {
             release: sanitizedRelease,
             namespace: ns,
             revision,
-            values,
+            values: scrubSecrets ? JSON.parse(values) : values,
+            scrubbed: scrubSecrets || false,
           };
         } catch (error) {
           const context: ErrorContext = { operation: "k8s_helm_values", resource: release, namespace };

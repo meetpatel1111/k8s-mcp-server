@@ -24,8 +24,8 @@ const CONFIG_DEFAULTS: ServerConfig = {
   defaultToolTimeout: 30000,
   cacheDefaultTtl: 5000,
   infraProtectionEnabled: true,
-  strictProtectionEnabled: false,
-  noDeleteProtectionEnabled: false,
+  strictProtectionEnabled: true,
+  noDeleteProtectionEnabled: true,
 };
 
 const CONFIG_BOUNDS = {

@@ -6,6 +6,7 @@ import { classifyError, ErrorContext } from "../error-handling.js";
 import { validateResourceName, validateNamespace } from "../validators.js";
 import { CacheManager } from "../cache-manager.js";
 import { execFileSync } from "child_process";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: CacheManager): { tool: Tool; handler: Function }[] {
   return [
@@ -165,11 +166,16 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
               type: "string",
               description: "Kubeconfig context to use (optional)",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in output (passwords, tokens, emails, IPs)",
+              default: false,
+            },
           },
           required: ["command"],
         },
       },
-      handler: async ({ command, namespace, context }: { command: string; namespace?: string; context?: string }) => {
+      handler: async ({ command, namespace, context, scrub }: { command: string; namespace?: string; context?: string; scrub?: boolean }) => {
         try {
           // Build kubectl command
           let kubectlArgs = command.split(' ');
@@ -185,15 +191,20 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
           }
           
           // Execute kubectl command
-          const output = execFileSync('kubectl', kubectlArgs, {
+          let output = execFileSync('kubectl', kubectlArgs, {
             encoding: 'utf-8',
             stdio: ['ignore', 'pipe', 'pipe'],
           });
+          
+          if (scrub) {
+            output = scrubSensitiveData(output);
+          }
           
           return {
             success: true,
             command: `kubectl ${kubectlArgs.join(' ')}`,
             output: output,
+            scrubbed: scrub || false,
           };
         } catch (error: any) {
           const context: ErrorContext = { operation: "k8s_kubectl", details: { command } };

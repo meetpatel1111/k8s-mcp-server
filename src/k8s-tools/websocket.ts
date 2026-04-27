@@ -1,9 +1,10 @@
 import * as k8s from "@kubernetes/client-node";
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
-import { execFileSync } from "child_process";
+import { execFileSync, spawn } from "child_process";
 
 import { K8sClient } from "../k8s-client.js";
 import { classifyError, ErrorContext } from "../error-handling.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
   return [
@@ -49,6 +50,11 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
               enum: ["direct", "websocket"],
               default: "direct",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in command output (passwords, tokens, emails, IPs)",
+              default: false,
+            },
           },
           required: ["resource", "namespace"],
         },
@@ -60,7 +66,8 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
         command,
         tty,
         stdin,
-        mode
+        mode,
+        scrub
       }: { 
         resource: string; 
         namespace: string; 
@@ -68,6 +75,7 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
         command?: string[];
         tty?: boolean;
         stdin?: boolean;
+        scrub?: boolean;
         mode?: string;
       }) => {
         const ns = namespace || "default";
@@ -132,15 +140,20 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
               kubectlArgs.push(...(command || ["/bin/sh"]));
               
               // Execute kubectl command directly
-              const output = execFileSync("kubectl", kubectlArgs, {
+              let output = execFileSync("kubectl", kubectlArgs, {
                 encoding: "utf8",
                 maxBuffer: 10 * 1024 * 1024, // 10MB buffer
               });
+              
+              if (scrub) {
+                output = scrubSensitiveData(output);
+              }
               
               return {
                 success: true,
                 mode: "direct",
                 output,
+                scrubbed: scrub || false,
                 resourceType,
                 resourceName,
                 targetPod,
@@ -215,7 +228,7 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
     {
       tool: {
         name: "k8s_port_forward",
-        description: "Set up port forwarding to a pod, deployment, or service (returns forwarding info). Supports format like 'deploy/my-deployment' or 'svc/my-service'.",
+        description: "Set up port forwarding to a pod, deployment, or service. Supports format like 'deploy/my-deployment' or 'svc/my-service'. Use mode='direct' for immediate port forwarding.",
         inputSchema: {
           type: "object",
           properties: {
@@ -233,6 +246,12 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
               items: { type: "string" },
               description: "Port mappings (e.g., ['8080:80', '8443:443']). For services, can use port name like '5000:my-service-port'",
             },
+            mode: {
+              type: "string",
+              description: "Execution mode: 'direct' for immediate port forwarding, 'command' to return kubectl command string",
+              enum: ["direct", "command"],
+              default: "direct",
+            },
           },
           required: ["resource", "ports"],
         },
@@ -240,13 +259,17 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
       handler: async ({ 
         resource, 
         namespace, 
-        ports 
+        ports,
+        mode
       }: { 
         resource: string; 
         namespace: string; 
-        ports: string[]; 
+        ports: string[];
+        mode?: string;
       }) => {
         const ns = namespace || "default";
+        const executionMode = mode || "direct";
+        
         // Parse resource type outside try block for error context
         let resourceType = "pod";
         let resourceName = resource;
@@ -275,8 +298,7 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
             };
           });
 
-          // For deployment/service, provide kubectl command that handles selector
-          let targetPod = resourceName;
+          // Build kubectl command
           let kubectlCommand: string;
           
           if (resourceType === "deployment") {
@@ -287,17 +309,56 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
             kubectlCommand = `kubectl port-forward ${resourceName} ${ports.join(" ")} -n ${ns}`;
           }
 
+          // Direct execution mode
+          if (executionMode === "direct") {
+            try {
+              // Spawn kubectl port-forward process
+              const args = ["port-forward", resource, ...ports, "-n", ns];
+              const process = spawn("kubectl", args);
+              
+              return {
+                success: true,
+                mode: "direct",
+                forwardInfo: {
+                  resourceType,
+                  resourceName,
+                  namespace: ns,
+                  portMappings,
+                  pid: process.pid,
+                  status: "forwarding",
+                },
+                kubectlCommand,
+                instructions: [
+                  "Port forwarding started in background",
+                  `Process ID: ${process.pid}`,
+                  "Access forwarded ports via localhost",
+                  "To stop forwarding, kill the process",
+                ],
+              };
+            } catch (spawnError: any) {
+              return {
+                success: false,
+                error: "Failed to start port forwarding",
+                message: spawnError.message,
+                fallback: "Use command mode instead",
+                kubectlCommand,
+              };
+            }
+          }
+
+          // Command mode (default)
           return {
+            mode: "command",
             forwardInfo: {
               resourceType,
               resourceName,
               namespace: ns,
               portMappings,
-              note: "WebSocket connection required for port forwarding",
+              note: "Execute the kubectl command to start port forwarding",
             },
             kubectlCommand,
             instructions: [
-              "Use the provided kubectl command for port forwarding",
+              "Execute the provided kubectl command to start port forwarding",
               "For deployments/services, kubectl will automatically select a pod",
               "Access via localhost:localPort",
             ],

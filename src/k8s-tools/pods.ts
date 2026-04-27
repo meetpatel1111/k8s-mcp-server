@@ -4,6 +4,7 @@ import * as k8s from "@kubernetes/client-node";
 import * as yaml from "js-yaml";
 import { classifyError, ErrorContext } from "../error-handling.js";
 import { validateResourceName, validateNamespace, validateLabelSelector } from "../validators.js";
+import { scrubSensitiveData } from "../utils/secret-scrubber.js";
 
 export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: Function }[] {
   return [
@@ -299,10 +300,15 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               items: { type: "string" },
               description: "Custom patterns to search for and count (e.g., ['timeout', 'connection refused', 'database'])",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in logs (passwords, tokens, emails, IPs)",
+              default: false,
+            },
           },
         },
       },
-      handler: async ({ name, namespace, container, tailLines, previous, follow, labelSelector, allContainers, timestamps, sinceSeconds, sinceTime, since, limitBytes, prefix, filter, exclude, level, format, maxPods, analyze, patterns }: { 
+      handler: async ({ name, namespace, container, tailLines, previous, follow, labelSelector, allContainers, timestamps, sinceSeconds, sinceTime, since, limitBytes, prefix, filter, exclude, level, format, maxPods, analyze, patterns, scrub }: { 
         name?: string; 
         namespace?: string;
         container?: string;
@@ -324,6 +330,7 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
         maxPods?: number;
         analyze?: boolean;
         patterns?: string[];
+        scrub?: boolean;
       }) => {
         const ns = namespace || "default";
         const coreApi = k8sClient.getCoreV1Api();
@@ -523,6 +530,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map((line: string) => `[${podName}/${source}] ${line}`).join('\n');
                   }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
+                  }
                   
                   podLogs.push({
                     pod: podName,
@@ -677,6 +687,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map(line => `[${podName}/${source}] ${line}`).join('\n');
                   }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
+                  }
                   logs[podName][cont || "default"] = finalLog;
                 } catch (err) {
                   const errorMessage = err instanceof Error ? err.message : String(err);
@@ -740,6 +753,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                   if (prefix) {
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map(line => `[${podName}/${source}] ${line}`).join('\n');
+                  }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
                   }
                   logs[podName][cont || "default"] = finalLog;
                 } catch (err) {
@@ -806,6 +822,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map(line => `[${podName}/${source}] ${line}`).join('\n');
                   }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
+                  }
                   logs[podName][cont || "default"] = finalLog;
                 } catch (err) {
                   const errorMessage = err instanceof Error ? err.message : String(err);
@@ -871,6 +890,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map(line => `[${podName}/${source}] ${line}`).join('\n');
                   }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
+                  }
                   logs[podName][cont || "default"] = finalLog;
                 } catch (err) {
                   const errorMessage = err instanceof Error ? err.message : String(err);
@@ -935,6 +957,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                   if (prefix) {
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map(line => `[${podName}/${source}] ${line}`).join('\n');
+                  }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
                   }
                   logs[podName][cont || "default"] = finalLog;
                 } catch (err) {
@@ -1006,6 +1031,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                         const source = cont || "default";
                         finalLog = finalLog.split('\n').map((line: string) => `[${podName}/${source}] ${line}`).join('\n');
                       }
+                      if (scrub) {
+                        finalLog = scrubSensitiveData(finalLog);
+                      }
                       jobLogs[podName][cont || "default"] = finalLog;
                     } catch (err) {
                       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1076,6 +1104,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                     const source = cont || "default";
                     finalLog = finalLog.split('\n').map((line: string) => `[${podName}/${source}] ${line}`).join('\n');
                   }
+                  if (scrub) {
+                    finalLog = scrubSensitiveData(finalLog);
+                  }
                   logs[podName][cont || "default"] = finalLog;
                 } catch (err) {
                   const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1106,6 +1137,9 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
             const source = container || "default";
             finalLog = finalLog.split('\n').map((line: string) => `[${resourceName}/${source}] ${line}`).join('\n');
           }
+          if (scrub) {
+            finalLog = scrubSensitiveData(finalLog);
+          }
           
           return {
             pod: resourceName,
@@ -1124,6 +1158,7 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
             level,
             patterns,
             analyze,
+            scrub: scrub || false,
             logs: analyze ? undefined : finalLog, // Don't return full logs in analyze mode
             analysis: singlePodAnalysis,
             summary: {
@@ -1205,18 +1240,28 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               description: "Namespace of the pod",
               default: "default",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in pod spec (env vars, command args)",
+              default: false,
+            },
           },
           required: ["name"],
         },
       },
-      handler: async ({ name, namespace }: { name: string; namespace?: string }) => {
+      handler: async ({ name, namespace, scrub }: { name: string; namespace?: string; scrub?: boolean }) => {
         try {
           validateResourceName(name, "pod");
           const pod = await k8sClient.getPod(name, namespace || "default");
+          let yamlOutput = JSON.stringify(pod, null, 2);
+          if (scrub) {
+            yamlOutput = scrubSensitiveData(yamlOutput);
+          }
           return {
             pod: name,
             namespace: namespace || "default",
-            yaml: JSON.stringify(pod, null, 2),
+            scrubbed: scrub || false,
+            yaml: yamlOutput,
           };
         } catch (error) {
           const context: ErrorContext = { operation: "k8s_describe_pod", resource: name, namespace };
