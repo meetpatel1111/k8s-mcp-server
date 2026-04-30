@@ -374,14 +374,16 @@ export async function safeExecute<T>(
   for (let attempt = 1; attempt <= (retry ? maxRetries : 1); attempt++) {
     try {
       // Execute with timeout
-      const result = await Promise.race([
-        operation(),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error(`Operation timeout after ${timeout}ms`)), timeout)
-        )
-      ]);
-      
-      return result;
+      let timeoutId: NodeJS.Timeout;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Operation timeout after ${timeout}ms`)), timeout);
+      });
+
+      try {
+        return await Promise.race([operation(), timeoutPromise]);
+      } finally {
+        clearTimeout(timeoutId!);
+      }
     } catch (error) {
       lastError = error;
       
@@ -418,35 +420,35 @@ export async function checkResourceExists(
     switch (resourceType.toLowerCase()) {
       case "pod":
       case "pods":
-        response = await k8sClient.getCoreV1Api().readNamespacedPod(name, namespace || "default");
+        response = await k8sClient.getCoreV1Api().readNamespacedPod({ name, namespace: namespace || "default" }, {});
         break;
       case "deployment":
       case "deployments":
-        response = await k8sClient.getAppsV1Api().readNamespacedDeployment(name, namespace || "default");
+        response = await k8sClient.getAppsV1Api().readNamespacedDeployment({ name, namespace: namespace || "default" }, {});
         break;
       case "service":
       case "services":
       case "svc":
-        response = await k8sClient.getCoreV1Api().readNamespacedService(name, namespace || "default");
+        response = await k8sClient.getCoreV1Api().readNamespacedService({ name, namespace: namespace || "default" }, {});
         break;
       case "configmap":
       case "configmaps":
       case "cm":
-        response = await k8sClient.getCoreV1Api().readNamespacedConfigMap(name, namespace || "default");
+        response = await k8sClient.getCoreV1Api().readNamespacedConfigMap({ name, namespace: namespace || "default" }, {});
         break;
       case "secret":
       case "secrets":
-        response = await k8sClient.getCoreV1Api().readNamespacedSecret(name, namespace || "default");
+        response = await k8sClient.getCoreV1Api().readNamespacedSecret({ name, namespace: namespace || "default" }, {});
         break;
       case "node":
       case "nodes":
-        response = await k8sClient.getCoreV1Api().readNode(name);
+        response = await k8sClient.getCoreV1Api().readNode({ name }, {});
         break;
       default:
         return { exists: false };
     }
     
-    return { exists: true, details: response?.body };
+    return { exists: true, details: response };
   } catch (error: any) {
     if (error?.statusCode === 404 || error?.message?.includes("not found")) {
       return { exists: false };

@@ -51,8 +51,15 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           const listPods = async () => {
             const coreApi = k8sClient.getCoreV1Api();
             const response = namespace
-              ? await coreApi.listNamespacedPod(namespace, undefined, undefined, undefined, fieldSelector, labelSelector)
-              : await coreApi.listPodForAllNamespaces(undefined, undefined, undefined, fieldSelector as any, labelSelector as any);
+              ? await coreApi.listNamespacedPod({
+                  namespace,
+                  fieldSelector,
+                  labelSelector
+                })
+              : await coreApi.listPodForAllNamespaces({
+                  fieldSelector: fieldSelector as any,
+                  labelSelector: labelSelector as any
+                });
             return response;
           };
           
@@ -60,7 +67,7 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
             ? await k8sClient.withContext(context, listPods)
             : await listPods();
           
-          const pods = response.body.items.map((pod: k8s.V1Pod) => {
+          const pods = response.items.map((pod: k8s.V1Pod) => {
             const containerStatuses = pod.status?.containerStatuses || [];
             const readyContainers = containerStatuses.filter((c: k8s.V1ContainerStatus) => c.ready).length;
             const totalContainers = containerStatuses.length;
@@ -490,8 +497,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           
           // Handle label selector - get logs from multiple pods with filtering and formatting
           if (labelSelector) {
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelector);
-            const pods = response.body.items.slice(0, podLimit);
+            const response = await coreApi.listNamespacedPod({
+              namespace: ns,
+              labelSelector
+            });
+            const pods = response.items.slice(0, podLimit);
             
             if (pods.length === 0) {
               return { error: `No pods found with label selector: ${labelSelector}` };
@@ -660,8 +670,8 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               .map(([k, v]) => `${k}=${v}`)
               .join(",");
             
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-            const pods = response.body.items;
+            const response = await coreApi.listNamespacedPod({ namespace: ns, labelSelector: labelSelectorStr });
+            const pods = response.items || [];
             
             if (pods.length === 0) {
               return { error: `No pods found for deployment ${resourceName}` };
@@ -715,8 +725,8 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           // Handle service-based logs
           if (resourceType === "service" && resourceName) {
             // Get service to find selector
-            const serviceResponse = await coreApi.readNamespacedService(resourceName, ns);
-            const selector = serviceResponse.body.spec?.selector;
+            const serviceResponse = await coreApi.readNamespacedService({ name: resourceName, namespace: ns });
+            const selector = serviceResponse.spec?.selector;
             
             if (!selector) {
               return { error: `Service ${resourceName} has no selector` };
@@ -727,8 +737,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               .map(([k, v]) => `${k}=${v}`)
               .join(",");
             
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-            const pods = response.body.items;
+            const response = await coreApi.listNamespacedPod({
+              namespace: ns,
+              labelSelector: labelSelectorStr
+            });
+            const pods = response.items;
             
             if (pods.length === 0) {
               return { error: `No pods found for service ${resourceName}` };
@@ -783,8 +796,8 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           if (resourceType === "statefulset" && resourceName) {
             // Get statefulset to find selector
             const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-            const statefulsetResponse = await appsApi.readNamespacedStatefulSet(resourceName, ns);
-            const selector = statefulsetResponse.body.spec?.selector?.matchLabels;
+            const statefulsetResponse = await appsApi.readNamespacedStatefulSet({ name: resourceName, namespace: ns });
+            const selector = statefulsetResponse.spec?.selector?.matchLabels;
             
             if (!selector) {
               return { error: `StatefulSet ${resourceName} has no selector` };
@@ -795,8 +808,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               .map(([k, v]) => `${k}=${v}`)
               .join(",");
             
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-            const pods = response.body.items;
+            const response = await coreApi.listNamespacedPod({
+              namespace: ns,
+              labelSelector: labelSelectorStr
+            });
+            const pods = response.items;
             
             if (pods.length === 0) {
               return { error: `No pods found for statefulset ${resourceName}` };
@@ -851,8 +867,8 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           if (resourceType === "daemonset" && resourceName) {
             // Get daemonset to find selector
             const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-            const daemonsetResponse = await appsApi.readNamespacedDaemonSet(resourceName, ns);
-            const selector = daemonsetResponse.body.spec?.selector?.matchLabels;
+            const daemonsetResponse = await appsApi.readNamespacedDaemonSet({ name: resourceName, namespace: ns });
+            const selector = daemonsetResponse.spec?.selector?.matchLabels;
             
             if (!selector) {
               return { error: `DaemonSet ${resourceName} has no selector` };
@@ -863,8 +879,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               .map(([k, v]) => `${k}=${v}`)
               .join(",");
             
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-            const pods = response.body.items;
+            const response = await coreApi.listNamespacedPod({
+              namespace: ns,
+              labelSelector: labelSelectorStr
+            });
+            const pods = response.items;
             
             if (pods.length === 0) {
               return { error: `No pods found for daemonset ${resourceName}` };
@@ -919,8 +938,8 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           if (resourceType === "job" && resourceName) {
             // Get job to find selector
             const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-            const jobResponse = await batchApi.readNamespacedJob(resourceName, ns);
-            const selector = jobResponse.body.spec?.selector?.matchLabels;
+            const jobResponse = await batchApi.readNamespacedJob({ name: resourceName, namespace: ns });
+            const selector = jobResponse.spec?.selector?.matchLabels;
             
             if (!selector) {
               return { error: `Job ${resourceName} has no selector` };
@@ -931,8 +950,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
               .map(([k, v]) => `${k}=${v}`)
               .join(",");
             
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-            const pods = response.body.items;
+            const response = await coreApi.listNamespacedPod({
+              namespace: ns,
+              labelSelector: labelSelectorStr
+            });
+            const pods = response.items;
             
             if (pods.length === 0) {
               return { error: `No pods found for job ${resourceName}` };
@@ -987,8 +1009,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           if (resourceType === "cronjob" && resourceName) {
             const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
             // Find all jobs owned by this cronjob
-            const jobsResponse = await batchApi.listNamespacedJob(ns, undefined, undefined, undefined, undefined, `owner-name=${resourceName}`);
-            const jobs = jobsResponse.body.items;
+            const jobsResponse = await batchApi.listNamespacedJob({
+              namespace: ns,
+              labelSelector: `owner-name=${resourceName}`
+            });
+            const jobs = jobsResponse.items;
             
             if (jobs.length === 0) {
               return { error: `No jobs found for cronjob ${resourceName}` };
@@ -1008,8 +1033,11 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
                 .join(",");
               
               try {
-                const podResponse = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-                const pods = podResponse.body.items;
+                const podResponse = await coreApi.listNamespacedPod({
+                  namespace: ns,
+                  labelSelector: labelSelectorStr
+                });
+                const pods = podResponse.items;
                 
                 const jobLogs: Record<string, any> = {};
                 
@@ -1065,13 +1093,16 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
             // Use owner name to find pods
             const labelSelectorStr = `owner-name=${resourceName}`;
             
-            const response = await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, undefined, labelSelectorStr);
-            const pods = response.body.items;
+            const response = await coreApi.listNamespacedPod({
+              namespace: ns,
+              labelSelector: labelSelectorStr
+            });
+            const pods = response.items;
             
             if (pods.length === 0) {
               // Fallback: try to find pods by owner reference
-              const allPods = await coreApi.listNamespacedPod(ns);
-              const rsPods = allPods.body.items.filter((pod: any) => 
+              const allPods = await coreApi.listNamespacedPod({ namespace: ns });
+              const rsPods = allPods.items.filter((pod: any) => 
                 pod.metadata?.ownerReferences?.some((ref: any) => 
                   ref.name === resourceName && ref.kind === "ReplicaSet"
                 )
@@ -1766,15 +1797,15 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
           }
           
           const coreApi = k8sClient.getCoreV1Api();
-          const result = await coreApi.createNamespacedPod(ns, pod);
+          const result = await coreApi.createNamespacedPod({ namespace: ns, body: pod });
           
           return {
             success: true,
             pod: podName,
             namespace: ns,
             image,
-            status: result.body.status?.phase || "Pending",
-            created: result.body.metadata?.creationTimestamp,
+            status: result.status?.phase || "Pending",
+            created: result.metadata?.creationTimestamp,
             message: `Pod ${podName} created successfully`,
             commands: {
               logs: `k8s_get_pod_logs({ name: "${podName}", namespace: "${ns}" })`,
@@ -1943,7 +1974,7 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
             },
           };
           
-          const result = await coreApi.createNamespacedPod(ns, debugPod);
+          const result = await coreApi.createNamespacedPod({ namespace: ns, body: debugPod });
           
           return {
             success: true,
@@ -1951,7 +1982,7 @@ export function registerPodTools(k8sClient: K8sClient): { tool: Tool; handler: F
             node,
             namespace: ns,
             image: image || "busybox:latest",
-            created: result.body.metadata?.creationTimestamp,
+            created: result.metadata?.creationTimestamp,
             message: `Debug pod ${debugPodName} created on node ${node}`,
             kubectlCommands: {
               exec: `kubectl exec -it ${debugPodName} -n ${ns} -- sh`,

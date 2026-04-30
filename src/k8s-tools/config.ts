@@ -90,19 +90,19 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               break;
             case "service":
               const coreApi = k8sClient.getCoreV1Api();
-              const svc = await coreApi.readNamespacedService(name, ns);
-              resource = svc.body;
+              const svc = await coreApi.readNamespacedService({ name, namespace: ns });
+              resource = svc;
               break;
             case "configmap":
-              const cm = await k8sClient.getCoreV1Api().readNamespacedConfigMap(name, ns);
-              resource = cm.body;
+              const cm = await k8sClient.getCoreV1Api().readNamespacedConfigMap({ name, namespace: ns });
+              resource = cm;
               break;
             case "secret":
               if (!scrub) {
                 throw new Error("SECURITY VIOLATION: Exporting a Secret requires explicitly setting 'scrub: true' to acknowledge sensitive resource handling.");
               }
-              const secret = await k8sClient.getCoreV1Api().readNamespacedSecret(name, ns);
-              resource = secret.body;
+              const secret = await k8sClient.getCoreV1Api().readNamespacedSecret({ name, namespace: ns });
+              resource = secret;
               // Mask sensitive data
               if (resource.data) {
                 resource.data = Object.fromEntries(
@@ -113,52 +113,52 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             case "statefulset":
             case "statefulsets":
               const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-              const ss = await appsApi.readNamespacedStatefulSet(name, ns);
-              resource = ss.body;
+              const ss = await appsApi.readNamespacedStatefulSet({ name, namespace: ns });
+              resource = ss;
               break;
             case "daemonset":
             case "daemonsets":
               const appsApi2 = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-              const ds = await appsApi2.readNamespacedDaemonSet(name, ns);
-              resource = ds.body;
+              const ds = await appsApi2.readNamespacedDaemonSet({ name, namespace: ns });
+              resource = ds;
               break;
             case "replicaset":
             case "replicasets":
               const appsApi3 = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-              const rs = await appsApi3.readNamespacedReplicaSet(name, ns);
-              resource = rs.body;
+              const rs = await appsApi3.readNamespacedReplicaSet({ name, namespace: ns });
+              resource = rs;
               break;
             case "job":
             case "jobs":
               const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-              const job = await batchApi.readNamespacedJob(name, ns);
-              resource = job.body;
+              const job = await batchApi.readNamespacedJob({ name, namespace: ns });
+              resource = job;
               break;
             case "cronjob":
             case "cronjobs":
               const batchApi2 = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-              const cj = await batchApi2.readNamespacedCronJob(name, ns);
-              resource = cj.body;
+              const cj = await batchApi2.readNamespacedCronJob({ name, namespace: ns });
+              resource = cj;
               break;
             case "ingress":
             case "ingresses":
               const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
-              const ing = await netApi.readNamespacedIngress(name, ns);
-              resource = ing.body;
+              const ing = await netApi.readNamespacedIngress({ name, namespace: ns });
+              resource = ing;
               break;
             case "persistentvolumeclaim":
             case "pvc":
             case "pvcs":
               const coreApi2 = k8sClient.getCoreV1Api();
-              const pvc = await coreApi2.readNamespacedPersistentVolumeClaim(name, ns);
-              resource = pvc.body;
+              const pvc = await coreApi2.readNamespacedPersistentVolumeClaim({ name, namespace: ns });
+              resource = pvc;
               break;
             case "persistentvolume":
             case "pv":
             case "pvs":
               const coreApi3 = k8sClient.getCoreV1Api();
-              const pv = await coreApi3.readPersistentVolume(name);
-              resource = pv.body;
+              const pv = await coreApi3.readPersistentVolume({ name });
+              resource = pv;
               break;
             default:
               return {
@@ -310,19 +310,19 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               resource = await k8sClient.getDeployment(name, ns);
               break;
             case "service":
-              const svc = await coreApi.readNamespacedService(name, ns);
-              resource = svc.body;
+              const svc = await coreApi.readNamespacedService({ name, namespace: ns });
+              resource = svc;
               break;
             case "configmap":
-              const cm = await coreApi.readNamespacedConfigMap(name, ns);
-              resource = cm.body;
+              const cm = await coreApi.readNamespacedConfigMap({ name, namespace: ns });
+              resource = cm;
               break;
             case "secret":
               if (!scrub) {
                 throw new Error("SECURITY VIOLATION: Reading a Secret requires explicitly setting 'scrub: true' to acknowledge sensitive resource handling.");
               }
-              const secret = await coreApi.readNamespacedSecret(name, ns);
-              resource = secret.body;
+              const secret = await coreApi.readNamespacedSecret({ name, namespace: ns });
+              resource = secret;
               // Mask sensitive data
               if (resource.data) {
                 resource.data = Object.fromEntries(
@@ -336,51 +336,51 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             case "statefulset":
             case "statefulsets":
               const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-              const ss = await appsApi.readNamespacedStatefulSet(name, ns);
-              resource = ss.body;
+              const ss = await appsApi.readNamespacedStatefulSet({ name, namespace: ns });
+              resource = ss;
               break;
             case "daemonset":
             case "daemonsets":
               const appsApi2 = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-              const ds = await appsApi2.readNamespacedDaemonSet(name, ns);
-              resource = ds.body;
+              const ds = await appsApi2.readNamespacedDaemonSet({ name, namespace: ns });
+              resource = ds;
               break;
             case "replicaset":
             case "replicasets":
               const appsApi3 = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-              const rs = await appsApi3.readNamespacedReplicaSet(name, ns);
-              resource = rs.body;
+              const rs = await appsApi3.readNamespacedReplicaSet({ name, namespace: ns });
+              resource = rs;
               break;
             case "job":
             case "jobs":
               const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-              const job = await batchApi.readNamespacedJob(name, ns);
-              resource = job.body;
+              const job = await batchApi.readNamespacedJob({ name, namespace: ns });
+              resource = job;
               break;
             case "cronjob":
             case "cronjobs":
               const batchApi2 = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-              const cj = await batchApi2.readNamespacedCronJob(name, ns);
-              resource = cj.body;
+              const cj = await batchApi2.readNamespacedCronJob({ name, namespace: ns });
+              resource = cj;
               break;
             case "ingress":
             case "ingresses":
               const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
-              const ing = await netApi.readNamespacedIngress(name, ns);
-              resource = ing.body;
+              const ing = await netApi.readNamespacedIngress({ name, namespace: ns });
+              resource = ing;
               break;
             case "persistentvolumeclaim":
             case "pvc":
             case "pvcs":
-              const pvc = await coreApi.readNamespacedPersistentVolumeClaim(name, ns);
-              resource = pvc.body;
+              const pvc = await coreApi.readNamespacedPersistentVolumeClaim({ name, namespace: ns });
+              resource = pvc;
               break;
             case "persistentvolume":
             case "pv":
             case "pvs":
               const coreApi3 = k8sClient.getCoreV1Api();
-              const pv = await coreApi3.readPersistentVolume(name);
-              resource = pv.body;
+              const pv = await coreApi3.readPersistentVolume({ name });
+              resource = pv;
               break;
             default:
               return { error: `Getting YAML for kind '${kind}' not supported yet. Supported: Pod, Deployment, Service, ConfigMap, Secret, Node, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob, Ingress, PVC, PV` };
@@ -438,10 +438,10 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             },
           };
 
-          const result = await coreApi.createNamespace(namespace);
+          const result = await coreApi.createNamespace({ body: namespace });
           return {
             success: true,
-            name: result.body.metadata?.name,
+            name: result.metadata?.name,
             message: `Namespace ${name} created successfully`,
           };
         } catch (error) {
@@ -484,12 +484,18 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
           if (force) {
             // Remove finalizers first
             const patch = { metadata: { finalizers: [] } };
-            await coreApi.patchNamespace(name, patch, undefined, undefined, undefined, undefined, undefined, {
-              headers: { "Content-Type": "application/merge-patch+json" },
-            });
+            await coreApi.patchNamespace({ name, body: patch }, {
+              middleware: [{
+                pre: (context: k8s.RequestContext) => {
+                  context.setHeaderParam("Content-Type", "application/merge-patch+json");
+                  return Promise.resolve(context);
+                },
+                post: (response: k8s.ResponseContext) => Promise.resolve(response)
+              }]
+            } as any);
           }
           
-          await coreApi.deleteNamespace(name);
+          await coreApi.deleteNamespace({ name });
           return {
             success: true,
             message: `Namespace ${name} deletion initiated`,
@@ -795,19 +801,19 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               case "service":
               case "services":
               case "svc":
-                const svcResult = await coreApi.readNamespacedService(name, ns);
-                currentResource = svcResult.body;
+                const svcResult = await coreApi.readNamespacedService({ name, namespace: ns });
+                currentResource = svcResult;
                 break;
               case "configmap":
               case "configmaps":
               case "cm":
-                const cmResult = await coreApi.readNamespacedConfigMap(name, ns);
-                currentResource = cmResult.body;
+                const cmResult = await coreApi.readNamespacedConfigMap({ name, namespace: ns });
+                currentResource = cmResult;
                 break;
               case "secret":
               case "secrets":
-                const secretResult = await coreApi.readNamespacedSecret(name, ns);
-                currentResource = secretResult.body;
+                const secretResult = await coreApi.readNamespacedSecret({ name, namespace: ns });
+                currentResource = secretResult;
                 // Mask data for display
                 if (currentResource.data) {
                   currentResource.data = Object.fromEntries(
@@ -818,46 +824,46 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               case "statefulset":
               case "statefulsets":
               case "sts":
-                const ssResult = await appsApi.readNamespacedStatefulSet(name, ns);
-                currentResource = ssResult.body;
+                const ssResult = await appsApi.readNamespacedStatefulSet({ name, namespace: ns });
+                currentResource = ssResult;
                 break;
               case "daemonset":
               case "daemonsets":
               case "ds":
-                const dsResult = await appsApi.readNamespacedDaemonSet(name, ns);
-                currentResource = dsResult.body;
+                const dsResult = await appsApi.readNamespacedDaemonSet({ name, namespace: ns });
+                currentResource = dsResult;
                 break;
               case "replicaset":
               case "replicasets":
               case "rs":
-                const rsResult = await appsApi.readNamespacedReplicaSet(name, ns);
-                currentResource = rsResult.body;
+                const rsResult = await appsApi.readNamespacedReplicaSet({ name, namespace: ns });
+                currentResource = rsResult;
                 break;
               case "job":
               case "jobs":
                 const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-                const jobResult = await batchApi.readNamespacedJob(name, ns);
-                currentResource = jobResult.body;
+                const jobResult = await batchApi.readNamespacedJob({ name, namespace: ns });
+                currentResource = jobResult;
                 break;
               case "cronjob":
               case "cronjobs":
               case "cj":
                 const batchApi2 = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-                const cjResult = await batchApi2.readNamespacedCronJob(name, ns);
-                currentResource = cjResult.body;
+                const cjResult = await batchApi2.readNamespacedCronJob({ name, namespace: ns });
+                currentResource = cjResult;
                 break;
               case "ingress":
               case "ingresses":
               case "ing":
                 const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
-                const ingResult = await netApi.readNamespacedIngress(name, ns);
-                currentResource = ingResult.body;
+                const ingResult = await netApi.readNamespacedIngress({ name, namespace: ns });
+                currentResource = ingResult;
                 break;
               case "persistentvolumeclaim":
               case "pvc":
               case "pvcs":
-                const pvcResult = await coreApi.readNamespacedPersistentVolumeClaim(name, ns);
-                currentResource = pvcResult.body;
+                const pvcResult = await coreApi.readNamespacedPersistentVolumeClaim({ name, namespace: ns });
+                currentResource = pvcResult;
                 break;
               default:
                 return { 
@@ -986,63 +992,63 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
                 case "service":
                 case "services":
                 case "svc":
-                  const svcResult = await coreApi.readNamespacedService(resName, resNs);
-                  liveResource = svcResult.body;
+                  const svcResult = await coreApi.readNamespacedService({ name: resName, namespace: resNs });
+                  liveResource = svcResult;
                   break;
                 case "configmap":
                 case "configmaps":
                 case "cm":
-                  const cmResult = await coreApi.readNamespacedConfigMap(resName, resNs);
-                  liveResource = cmResult.body;
+                  const cmResult = await coreApi.readNamespacedConfigMap({ name: resName, namespace: resNs });
+                  liveResource = cmResult;
                   break;
                 case "secret":
                 case "secrets":
-                  const secretResult = await coreApi.readNamespacedSecret(resName, resNs);
-                  liveResource = secretResult.body;
+                  const secretResult = await coreApi.readNamespacedSecret({ name: resName, namespace: resNs });
+                  liveResource = secretResult;
                   break;
                 case "statefulset":
                 case "statefulsets":
                 case "sts":
-                  const ssResult = await appsApi.readNamespacedStatefulSet(resName, resNs);
-                  liveResource = ssResult.body;
+                  const ssResult = await appsApi.readNamespacedStatefulSet({ name: resName, namespace: resNs });
+                  liveResource = ssResult;
                   break;
                 case "daemonset":
                 case "daemonsets":
                 case "ds":
-                  const dsResult = await appsApi.readNamespacedDaemonSet(resName, resNs);
-                  liveResource = dsResult.body;
+                  const dsResult = await appsApi.readNamespacedDaemonSet({ name: resName, namespace: resNs });
+                  liveResource = dsResult;
                   break;
                 case "replicaset":
                 case "replicasets":
                 case "rs":
-                  const rsResult = await appsApi.readNamespacedReplicaSet(resName, resNs);
-                  liveResource = rsResult.body;
+                  const rsResult = await appsApi.readNamespacedReplicaSet({ name: resName, namespace: resNs });
+                  liveResource = rsResult;
                   break;
                 case "job":
                 case "jobs":
                   const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-                  const jobResult = await batchApi.readNamespacedJob(resName, resNs);
-                  liveResource = jobResult.body;
+                  const jobResult = await batchApi.readNamespacedJob({ name: resName, namespace: resNs });
+                  liveResource = jobResult;
                   break;
                 case "cronjob":
                 case "cronjobs":
                 case "cj":
                   const batchApi2 = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-                  const cjResult = await batchApi2.readNamespacedCronJob(resName, resNs);
-                  liveResource = cjResult.body;
+                  const cjResult = await batchApi2.readNamespacedCronJob({ name: resName, namespace: resNs });
+                  liveResource = cjResult;
                   break;
                 case "ingress":
                 case "ingresses":
                 case "ing":
                   const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
-                  const ingResult = await netApi.readNamespacedIngress(resName, resNs);
-                  liveResource = ingResult.body;
+                  const ingResult = await netApi.readNamespacedIngress({ name: resName, namespace: resNs });
+                  liveResource = ingResult;
                   break;
                 case "persistentvolumeclaim":
                 case "pvc":
                 case "pvcs":
-                  const pvcResult = await coreApi.readNamespacedPersistentVolumeClaim(resName, resNs);
-                  liveResource = pvcResult.body;
+                  const pvcResult = await coreApi.readNamespacedPersistentVolumeClaim({ name: resName, namespace: resNs });
+                  liveResource = pvcResult;
                   break;
                 default:
                   results.push({ error: `Diff not supported for ${kind}. Supported: pod, deployment, service, configmap, secret, statefulset, daemonset, replicaset, job, cronjob, ingress, pvc` });
@@ -1184,7 +1190,7 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await coreApi.deleteNamespacedConfigMap(name, ns, undefined, options);
+          await coreApi.deleteNamespacedConfigMap({ name, namespace: ns, ...options }, {});
           
           return {
             success: true,
@@ -1238,7 +1244,7 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await coreApi.deleteNamespacedSecret(name, ns, undefined, options);
+          await coreApi.deleteNamespacedSecret({ name, namespace: ns, ...options }, {});
           
           return {
             success: true,
@@ -1318,16 +1324,16 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             immutable,
           };
           
-          const result = await coreApi.createNamespacedConfigMap(ns, configMap);
+          const result = await coreApi.createNamespacedConfigMap({ namespace: ns, body: configMap }, {});
           
           return {
             success: true,
             message: `ConfigMap ${name} created in namespace ${ns}`,
             configMap: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              dataKeys: Object.keys(result.body.data || {}),
-              immutable: result.body.immutable,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              dataKeys: Object.keys(result.data || {}),
+              immutable: result.immutable,
             },
           };
         } catch (error) {
@@ -1482,17 +1488,17 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
             immutable,
           };
           
-          const result = await coreApi.createNamespacedSecret(ns, secret);
+          const result = await coreApi.createNamespacedSecret({ namespace: ns, body: secret }, {});
           
           return {
             success: true,
             message: `Secret ${name} created in namespace ${ns}`,
             secret: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              type: result.body.type,
-              dataKeys: Object.keys(result.body.data || {}),
-              immutable: result.body.immutable,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              type: result.type,
+              dataKeys: Object.keys(result.data || {}),
+              immutable: result.immutable,
             },
           };
         } catch (error) {

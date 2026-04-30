@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.19.1 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.20.0 logo">
 </p>
 
 # k8s-helm-mcp
@@ -7,11 +7,12 @@
 [![npm version](https://badge.fury.io/js/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node.js Version](https://img.shields.io/node/v/k8s-helm-mcp.svg)](https://nodejs.org/)
+[![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.19.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.20.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
-> **Status:** This package works brilliantly with **Claude Code**! You can add it directly using `claude mcp add kubernetes npx k8s-helm-mcp`.
+> **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
 
 > [!NOTE]
 > **SSE Feature:** The SSE transport feature is currently in development and should be considered experimental.
@@ -286,7 +287,7 @@ npm start
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "npx",
       "args": ["-y", "k8s-helm-mcp"]
     }
@@ -298,7 +299,7 @@ npm start
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["/path/to/k8s-helm-mcp/dist/index.js"]
     }
@@ -310,7 +311,7 @@ npm start
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["C:\\path\\to\\k8s-helm-mcp\\dist\\index.js"]
     }
@@ -329,7 +330,7 @@ Add to your `mcpServers` config:
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "npx",
       "args": ["-y", "k8s-helm-mcp"],
       "description": "Kubernetes cluster management"
@@ -346,7 +347,7 @@ Add server with command:
 #### Option 4: Claude Code
 
 ```bash
-claude mcp add kubernetes npx k8s-helm-mcp
+claude mcp add k8s-helm-mcp npx k8s-helm-mcp
 ```
 
 #### Option 5: Web Deployment (SSE Transport)
@@ -449,7 +450,7 @@ To integrate this server, add the configuration below to your `claude_desktop_co
 ```json
 {
   "mcpServers": {
-    "k8s": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["/path/to/k8s-mcp/dist/index.js"]
     }
@@ -507,7 +508,7 @@ Open Claude Desktop → Settings → Developer → Edit Config, then add:
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["PATH/TO/k8s-helm-mcp/dist/index.js"]
     }
@@ -790,25 +791,27 @@ See [SECURITY.md](SECURITY.md) for detailed documentation.
 
 ### Tool Organization
 
-Tools are organized by domain across 12 TypeScript files:
+Tools are organized by domain across 14 TypeScript files:
 
 | File | Tools | Domain |
 |------|-------|--------|
-| `cluster.ts` | 10 | Context switching, cluster info, namespaces, API versions |
+| `cluster.ts` | 18 | Context switching, cluster info, namespaces, API versions, priority classes, leases |
 | `nodes.ts` | 10 | Node management, cordon, drain, taints, labels |
-| `pods.ts` | 12 | Pod operations, logs, exec, debugging |
-| `workloads.ts` | 27 | Deployments, StatefulSets, Jobs, scaling, rollouts |
-| `networking.ts` | 11 | Services, ingresses, network policies, DNS |
-| `storage.ts` | 10 | PVs, PVCs, StorageClasses |
-| `security.ts` | 23 | RBAC, secrets, service accounts, policies |
-| `monitoring.ts` | 9 | Events, metrics, quotas, health scores |
-| `config.ts` | 9 | Manifests, apply, export, edit, cp, diff |
-| `advanced.ts` | 18 | Raw API queries, bulk ops, analysis, optimization |
-| `templates.ts` | 4 | Quick deploy templates |
-| `websocket.ts` | 4 | Interactive exec, attach, port-forward |
-| `helm-tools/` | 40+ | Helm releases, charts, repos, plugins, registry |
+| `pods.ts` | 13 | Pod operations, logs, exec, debugging |
+| `workloads.ts` | 45 | Deployments, StatefulSets, DaemonSets, Jobs, CronJobs, scaling, rollouts, HPAs |
+| `networking.ts` | 18 | Services, ingresses, network policies, DNS, expose |
+| `storage.ts` | 11 | PVs, PVCs, StorageClasses |
+| `security.ts` | 31 | RBAC, secrets, service accounts, policies, certificates |
+| `monitoring.ts` | 14 | Events, metrics, quotas, health scores, resource usage |
+| `config.ts` | 21 | Manifests, apply, export, edit, cp, diff, kubectl |
+| `advanced.ts` | 26 | Raw API queries, bulk ops, analysis, optimization |
+| `templates.ts` | 2 | Quick deploy templates |
+| `websocket.ts` | 5 | Interactive exec, attach, port-forward, log streaming |
+| `diagnostics.ts` | 6 | Cluster diagnostics, troubleshooting, connectivity checks |
+| `multi-cluster.ts` | 3 | Multi-cluster management and federation |
+| `helm-tools/` | 39 | Helm releases, charts, repos, plugins, registry |
 
-**Total: 260+ tools**
+**Total: 262+ tools**
 
 ### Core Components
 

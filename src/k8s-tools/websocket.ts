@@ -181,16 +181,16 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
           }
           
           // WebSocket mode (original behavior)
-          const execUrl = await coreApi.connectGetNamespacedPodExec(
-            targetPod,
-            ns,
-            (command || ["/bin/sh"]).join(" "),
+          const execUrl = await coreApi.connectGetNamespacedPodExec({
+            name: targetPod,
+            namespace: ns,
+            command: (command || ["/bin/sh"]).join(" "),
             container,
-            stdin || false,
-            tty || false,
-            true,
-            true
-          );
+            stdin: stdin || false,
+            tty: tty || false,
+            stdout: true,
+            stderr: true
+          });
 
           return {
             success: true,
@@ -517,15 +517,15 @@ export function registerWebSocketTools(k8sClient: K8sClient): { tool: Tool; hand
           
           // This would normally establish WebSocket connection
           // For MCP, we return the connection info
-          const attachUrl = await coreApi.connectGetNamespacedPodAttach(
-            pod,
+          const attachUrl = await coreApi.connectGetNamespacedPodAttach({
+            name: pod,
             namespace,
             container,
-            stderr || true,
-            stdin || true,
-            stdout || true,
-            false
-          );
+            stderr: stderr || true,
+            stdin: stdin || true,
+            stdout: stdout || true,
+            tty: false
+          });
 
           return {
             attachInfo: {

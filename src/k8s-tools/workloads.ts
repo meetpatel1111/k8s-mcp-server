@@ -290,11 +290,11 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
           const response = namespace
-            ? await appsApi.listNamespacedStatefulSet(namespace)
+            ? await appsApi.listNamespacedStatefulSet({ namespace })
             : await appsApi.listStatefulSetForAllNamespaces();
           
           return {
-            statefulsets: response.body.items.map((ss: k8s.V1StatefulSet) => ({
+            statefulsets: response.items.map((ss: k8s.V1StatefulSet) => ({
               name: ss.metadata?.name,
               namespace: ss.metadata?.namespace,
               replicas: ss.spec?.replicas || 0,
@@ -342,8 +342,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "statefulset");
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-          const result = await appsApi.readNamespacedStatefulSet(name, namespace || "default");
-          const ss = result.body;
+          const ss = await appsApi.readNamespacedStatefulSet({ name, namespace: namespace || "default" });
           
           return {
             name: ss.metadata?.name,
@@ -404,12 +403,11 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           validateResourceName(name, "statefulset");
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
           
-          const deleteOptions: any = {};
-          if (!cascade) {
-            deleteOptions.propagationPolicy = "Orphan";
-          }
-          
-          await appsApi.deleteNamespacedStatefulSet(name, namespace || "default", undefined, undefined, undefined, undefined, undefined, deleteOptions);
+          await appsApi.deleteNamespacedStatefulSet({
+            name,
+            namespace: namespace || "default",
+            propagationPolicy: cascade === false ? "Orphan" : undefined
+          });
           
           return {
             success: true,
@@ -447,11 +445,11 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
           const response = namespace
-            ? await appsApi.listNamespacedDaemonSet(namespace)
+            ? await appsApi.listNamespacedDaemonSet({ namespace })
             : await appsApi.listDaemonSetForAllNamespaces();
           
           return {
-            daemonsets: response.body.items.map((ds: k8s.V1DaemonSet) => ({
+            daemonsets: response.items.map((ds: k8s.V1DaemonSet) => ({
               name: ds.metadata?.name,
               namespace: ds.metadata?.namespace,
               desired: ds.status?.desiredNumberScheduled || 0,
@@ -498,8 +496,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "daemonset");
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-          const result = await appsApi.readNamespacedDaemonSet(name, namespace || "default");
-          const ds = result.body;
+          const ds = await appsApi.readNamespacedDaemonSet({ name, namespace: namespace || "default" });
           
           return {
             name: ds.metadata?.name,
@@ -554,7 +551,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "daemonset");
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-          await appsApi.deleteNamespacedDaemonSet(name, namespace || "default");
+          await appsApi.deleteNamespacedDaemonSet({ name, namespace: namespace || "default" });
           
           return {
             success: true,
@@ -591,11 +588,11 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
           const response = namespace
-            ? await appsApi.listNamespacedReplicaSet(namespace)
+            ? await appsApi.listNamespacedReplicaSet({ namespace })
             : await appsApi.listReplicaSetForAllNamespaces();
           
           return {
-            replicasets: response.body.items.map((rs: k8s.V1ReplicaSet) => ({
+            replicasets: response.items.map((rs: k8s.V1ReplicaSet) => ({
               name: rs.metadata?.name,
               namespace: rs.metadata?.namespace,
               replicas: rs.spec?.replicas || 0,
@@ -644,8 +641,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "replicaset");
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-          const result = await appsApi.readNamespacedReplicaSet(name, namespace || "default");
-          const rs = result.body;
+          const rs = await appsApi.readNamespacedReplicaSet({ name, namespace: namespace || "default" });
           
           return {
             name: rs.metadata?.name,
@@ -705,12 +701,11 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           validateResourceName(name, "replicaset");
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
           
-          const deleteOptions: any = {};
-          if (!cascade) {
-            deleteOptions.propagationPolicy = "Orphan";
-          }
-          
-          await appsApi.deleteNamespacedReplicaSet(name, namespace || "default", undefined, undefined, undefined, undefined, undefined, deleteOptions);
+          await appsApi.deleteNamespacedReplicaSet({
+            name,
+            namespace: namespace || "default",
+            propagationPolicy: cascade === false ? "Orphan" : undefined
+          });
           
           return {
             success: true,
@@ -801,8 +796,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "job");
           const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-          const result = await batchApi.readNamespacedJob(name, namespace || "default");
-          const job = result.body;
+          const job = await batchApi.readNamespacedJob({ name, namespace: namespace || "default" }, {});
           
           return {
             name: job.metadata?.name,
@@ -872,7 +866,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             deleteOptions.propagationPolicy = "Orphan";
           }
           
-          await batchApi.deleteNamespacedJob(name, namespace || "default", undefined, undefined, undefined, undefined, undefined, deleteOptions);
+          await batchApi.deleteNamespacedJob({ name, namespace: namespace || "default", ...deleteOptions }, {});
           
           return {
             success: true,
@@ -917,8 +911,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
         
           // Get the CronJob
-          const cronJobResponse = await batchApi.readNamespacedCronJob(name, namespace || "default");
-          const cronJob = cronJobResponse.body;
+          const cronJob = await batchApi.readNamespacedCronJob({ name, namespace: namespace || "default" });
         
           // Create a Job from the CronJob template
           const jobName = `${name}-manual-${Date.now()}`;
@@ -935,7 +928,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             spec: cronJob.spec?.jobTemplate?.spec,
           };
         
-          await batchApi.createNamespacedJob(namespace || "default", job);
+          await batchApi.createNamespacedJob({ namespace: namespace || "default", body: job });
         
           return {
             success: true,
@@ -1028,8 +1021,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "cronjob");
           const batchApi = (k8sClient as any).kc.makeApiClient(k8s.BatchV1Api);
-          const result = await batchApi.readNamespacedCronJob(name, namespace || "default");
-          const cj = result.body;
+          const cj = await batchApi.readNamespacedCronJob({ name, namespace: namespace || "default" });
 
           return {
             name: cj.metadata?.name,
@@ -1180,13 +1172,13 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           // Get the deployment to find its revision history
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-          const deployment = await appsApi.readNamespacedDeployment(name, ns);
+          const deployment = await appsApi.readNamespacedDeployment({ name, namespace: ns }, {});
           
           // Get replica sets to find revision history
-          const replicaSets = await appsApi.listNamespacedReplicaSet(ns);
+          const replicaSets = await appsApi.listNamespacedReplicaSet({ namespace: ns });
           
           // Filter replica sets owned by this deployment
-          const deploymentRS = replicaSets.body.items.filter((rs: k8s.V1ReplicaSet) => 
+          const deploymentRS = replicaSets.items.filter((rs: k8s.V1ReplicaSet) => 
             rs.metadata?.ownerReferences?.some((ref: k8s.V1OwnerReference) => 
               ref.kind === "Deployment" && ref.name === name
             )
@@ -1202,7 +1194,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           return {
             deployment: name,
             namespace: ns,
-            currentRevision: deployment.body.metadata?.annotations?.["deployment.kubernetes.io/revision"],
+            currentRevision: deployment.metadata?.annotations?.["deployment.kubernetes.io/revision"],
             history: sortedRS.map((rs: k8s.V1ReplicaSet) => ({
               revision: rs.metadata?.annotations?.["deployment.kubernetes.io/revision"],
               name: rs.metadata?.name,
@@ -1257,8 +1249,8 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           
           if (revision) {
             // Get the specific replica set for this revision
-            const replicaSets = await appsApi.listNamespacedReplicaSet(ns);
-            const targetRS = replicaSets.body.items.find((rs: k8s.V1ReplicaSet) => 
+            const replicaSets = await appsApi.listNamespacedReplicaSet({ namespace: ns });
+            const targetRS = replicaSets.items.find((rs: k8s.V1ReplicaSet) => 
               rs.metadata?.ownerReferences?.some((ref: k8s.V1OwnerReference) => ref.name === name) &&
               rs.metadata?.annotations?.["deployment.kubernetes.io/revision"] === String(revision)
             );
@@ -1277,17 +1269,19 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
               },
             };
             
-            await appsApi.patchNamespacedDeployment(
+            await appsApi.patchNamespacedDeployment({
               name,
-              ns,
-              patch,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-            );
+              namespace: ns,
+              body: patch
+            }, {
+              middleware: [{
+                pre: async (context: any) => {
+                  context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                  return context;
+                },
+                post: async (response: any) => response
+              }]
+            } as any);
             
             return {
               success: true,
@@ -1299,8 +1293,8 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           } else {
             // Rollback to previous version by undoing the latest change
             // Get current deployment
-            const deployment = await appsApi.readNamespacedDeployment(name, ns);
-            const currentAnnotations = deployment.body.spec?.template?.metadata?.annotations || {};
+            const deployment = await appsApi.readNamespacedDeployment({ name, namespace: ns }, {});
+            const currentAnnotations = deployment.spec?.template?.metadata?.annotations || {};
             
             // Add undo annotation
             const patch = {
@@ -1316,17 +1310,19 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
               },
             };
             
-            await appsApi.patchNamespacedDeployment(
+            await appsApi.patchNamespacedDeployment({
               name,
-              ns,
-              patch,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-            );
+              namespace: ns,
+              body: patch
+            }, {
+              middleware: [{
+                pre: async (context: any) => {
+                  context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                  return context;
+                },
+                post: async (response: any) => response
+              }]
+            } as any);
             
             return {
               success: true,
@@ -1450,7 +1446,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await appsApi.createNamespacedDeployment(ns, deployment);
+          const result = await appsApi.createNamespacedDeployment({ namespace: ns, body: deployment }, {});
           
           return {
             success: true,
@@ -1458,7 +1454,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             namespace: ns,
             image,
             replicas: replicas || 1,
-            created: result.body.metadata?.creationTimestamp,
+            created: result.metadata?.creationTimestamp,
             message: `Deployment ${name} created successfully`,
           };
         } catch (error) {
@@ -1556,7 +1552,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await batchApi.createNamespacedJob(ns, job);
+          const result = await batchApi.createNamespacedJob({ namespace: ns, body: job }, {});
           
           return {
             success: true,
@@ -1564,7 +1560,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             namespace: ns,
             image,
             command: command || [],
-            created: result.body.metadata?.creationTimestamp,
+            created: result.metadata?.creationTimestamp,
             message: `Job ${name} created successfully`,
           };
         } catch (error) {
@@ -1667,7 +1663,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await batchApi.createNamespacedCronJob(ns, cronJob);
+          const result = await batchApi.createNamespacedCronJob({ namespace: ns, body: cronJob }, {});
           
           return {
             success: true,
@@ -1676,7 +1672,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             image,
             schedule,
             command: command || [],
-            created: result.body.metadata?.creationTimestamp,
+            created: result.metadata?.creationTimestamp,
             message: `CronJob ${name} created successfully`,
           };
         } catch (error) {
@@ -1732,8 +1728,8 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
           
           // Get current deployment
-          const current = await appsApi.readNamespacedDeployment(deployment, ns);
-          const containers = current.body.spec?.template?.spec?.containers || [];
+          const current = await appsApi.readNamespacedDeployment({ name: deployment, namespace: ns }, {});
+          const containers = current.spec?.template?.spec?.containers || [];
           
           // Find target container
           const targetContainer = container || containers[0]?.name;
@@ -1754,17 +1750,19 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await appsApi.patchNamespacedDeployment(
-            deployment,
-            ns,
-            patch,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-          );
+          const result = await appsApi.patchNamespacedDeployment({
+            name: deployment,
+            namespace: ns,
+            body: patch
+          }, {
+            middleware: [{
+              pre: async (context: any) => {
+                context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                return context;
+              },
+              post: async (response: any) => response
+            }]
+          } as any);
           
           return {
             success: true,
@@ -1850,8 +1848,8 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           // Try to get actual selector from resource
           if (resource.toLowerCase() === "deployment" || resource.toLowerCase() === "deployments") {
             const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
-            const deploy = await appsApi.readNamespacedDeployment(name, ns);
-            selector = deploy.body.spec?.selector?.matchLabels || selector;
+            const deploy = await appsApi.readNamespacedDeployment({ name, namespace: ns }, {});
+            selector = deploy.spec?.selector?.matchLabels || selector;
           }
           
           const service: k8s.V1Service = {
@@ -1874,7 +1872,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await coreApi.createNamespacedService(ns, service);
+          const result = await coreApi.createNamespacedService({ namespace: ns, body: service });
           
           return {
             success: true,
@@ -1884,7 +1882,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             port,
             targetPort: targetPort || port,
             selector,
-            clusterIP: result.body.spec?.clusterIP,
+            clusterIP: result.spec?.clusterIP,
             message: `Service ${svcName} exposed for ${resource}/${name}`,
           };
         } catch (error) {
@@ -1977,11 +1975,11 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await autoscalingApi.createNamespacedHorizontalPodAutoscaler(ns, hpa);
+          const result = await autoscalingApi.createNamespacedHorizontalPodAutoscaler({ namespace: ns, body: hpa }, {});
           
           return {
             success: true,
-            hpa: result.body.metadata?.name,
+            hpa: result.metadata?.name,
             namespace: ns,
             deployment,
             minReplicas: min,
@@ -2067,33 +2065,37 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             case "pod":
             case "pods":
               if (Object.keys(labelsToAdd).length > 0) {
-                result = await coreApi.patchNamespacedPod(
+                result = await coreApi.patchNamespacedPod({
                   name,
-                  ns,
-                  { metadata: { labels: labelsToAdd } },
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-                );
+                  namespace: ns,
+                  body: { metadata: { labels: labelsToAdd } }
+                }, {
+                  middleware: [{
+                    pre: async (context: any) => {
+                      context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                      return context;
+                    },
+                    post: async (response: any) => response
+                  }]
+                } as any);
               }
               break;
               
             case "deployment":
             case "deployments":
-              result = await appsApi.patchNamespacedDeployment(
+              result = await appsApi.patchNamespacedDeployment({
                 name,
-                ns,
-                { metadata: { labels: labelsToAdd } },
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+                namespace: ns,
+                body: { metadata: { labels: labelsToAdd } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             case "node":
@@ -2187,48 +2189,54 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
           switch (resource.toLowerCase()) {
             case "pod":
             case "pods":
-              result = await coreApi.patchNamespacedPod(
+              result = await coreApi.patchNamespacedPod({
                 name,
-                ns,
-                { metadata: { annotations: annotationsToAdd } },
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+                namespace: ns,
+                body: { metadata: { annotations: annotationsToAdd } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             case "deployment":
             case "deployments":
-              result = await appsApi.patchNamespacedDeployment(
+              result = await appsApi.patchNamespacedDeployment({
                 name,
-                ns,
-                { metadata: { annotations: annotationsToAdd } },
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+                namespace: ns,
+                body: { metadata: { annotations: annotationsToAdd } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             case "service":
             case "services":
             case "svc":
-              result = await coreApi.patchNamespacedService(
+              result = await coreApi.patchNamespacedService({
                 name,
-                ns,
-                { metadata: { annotations: annotationsToAdd } },
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+                namespace: ns,
+                body: { metadata: { annotations: annotationsToAdd } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             case "node":
@@ -2413,31 +2421,55 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             case "replicaset":
             case "replicasets":
             case "rs":
-              result = await appsApi.patchNamespacedReplicaSet(
-                resName, resNs, { spec: { replicas: targetReplicas } },
-                undefined, undefined, undefined, undefined, undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+              result = await appsApi.patchNamespacedReplicaSet({
+                name: resName,
+                namespace: resNs,
+                body: { spec: { replicas: targetReplicas } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             case "statefulset":
             case "statefulsets":
             case "sts":
-              result = await appsApi.patchNamespacedStatefulSet(
-                resName, resNs, { spec: { replicas: targetReplicas } },
-                undefined, undefined, undefined, undefined, undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+              result = await appsApi.patchNamespacedStatefulSet({
+                name: resName,
+                namespace: resNs,
+                body: { spec: { replicas: targetReplicas } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             case "replicationcontroller":
             case "rc":
               const coreApi = k8sClient.getCoreV1Api();
-              result = await coreApi.patchNamespacedReplicationController(
-                resName, resNs, { spec: { replicas: targetReplicas } },
-                undefined, undefined, undefined, undefined, undefined,
-                { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-              );
+              result = await coreApi.patchNamespacedReplicationController({
+                name: resName,
+                namespace: resNs,
+                body: { spec: { replicas: targetReplicas } }
+              }, {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any);
               break;
               
             default:
@@ -2448,7 +2480,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             resource: `${type}/${resName}`,
             namespace: resNs,
             replicas: targetReplicas,
-            previousReplicas: result?.body?.spec?.replicas || targetReplicas,
+            previousReplicas: result?.spec?.replicas || targetReplicas,
           };
         }
       },
@@ -2502,7 +2534,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = 0;
           }
           
-          await appsApi.deleteNamespacedDeployment(name, ns, undefined, options);
+          await appsApi.deleteNamespacedDeployment({ name, namespace: ns, ...options }, {});
           
           return {
             success: true,
@@ -2560,7 +2592,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await batchApi.deleteNamespacedCronJob(name, ns, undefined, options);
+          await batchApi.deleteNamespacedCronJob({ name, namespace: ns, ...options }, {});
           
           return {
             success: true,
@@ -2612,7 +2644,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          await appsApi.patchNamespacedDeployment(deployment, ns, patch);
+          await appsApi.patchNamespacedDeployment({ name: deployment, namespace: ns, body: patch }, {});
           
           return {
             success: true,
@@ -2664,7 +2696,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          await appsApi.patchNamespacedDeployment(deployment, ns, patch);
+          await appsApi.patchNamespacedDeployment({ name: deployment, namespace: ns, body: patch }, {});
           
           return {
             success: true,
@@ -2723,7 +2755,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          await appsApi.patchNamespacedStatefulSet(name, ns, patch);
+          await appsApi.patchNamespacedStatefulSet({ name, namespace: ns, body: patch }, {});
           
           return {
             success: true,
@@ -2783,7 +2815,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          await appsApi.patchNamespacedDaemonSet(name, ns, patch);
+          await appsApi.patchNamespacedDaemonSet({ name, namespace: ns, body: patch }, {});
           
           return {
             success: true,
@@ -3344,7 +3376,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await appsApi.createNamespacedStatefulSet(ns, statefulSet);
+          const result = await appsApi.createNamespacedStatefulSet({ namespace: ns, body: statefulSet }, {});
           
           return {
             success: true,
@@ -3355,7 +3387,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             replicas: replicas || 1,
             storageSize: storageSize || "1Gi",
             storageClass,
-            created: result.body.metadata?.creationTimestamp,
+            created: result.metadata?.creationTimestamp,
             message: `StatefulSet ${name} created successfully with ${replicas || 1} replica(s)`,
             note: `Ensure service '${serviceName}' exists or create it for proper StatefulSet operation`,
           };
@@ -3480,7 +3512,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             },
           };
           
-          const result = await appsApi.createNamespacedDaemonSet(ns, daemonSet);
+          const result = await appsApi.createNamespacedDaemonSet({ namespace: ns, body: daemonSet }, {});
           
           return {
             success: true,
@@ -3490,7 +3522,7 @@ export function registerWorkloadTools(k8sClient: K8sClient): { tool: Tool; handl
             hostNetwork: hostNetwork || false,
             hostPID: hostPID || false,
             nodeSelector,
-            created: result.body.metadata?.creationTimestamp,
+            created: result.metadata?.creationTimestamp,
             message: `DaemonSet ${name} created successfully`,
             note: hostNetwork ? "Using host network - pods will run with host networking" : "Pods will run on all matching nodes",
           };

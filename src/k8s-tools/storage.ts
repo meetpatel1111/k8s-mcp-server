@@ -66,10 +66,10 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
         try {
           const coreApi = k8sClient.getCoreV1Api();
           const response = namespace
-            ? await coreApi.listNamespacedPersistentVolumeClaim(namespace)
-            : await coreApi.listPersistentVolumeClaimForAllNamespaces();
+            ? await coreApi.listNamespacedPersistentVolumeClaim({ namespace })
+            : await coreApi.listPersistentVolumeClaimForAllNamespaces({});
           return {
-            persistentVolumeClaims: response.body.items.map((pvc: k8s.V1PersistentVolumeClaim) => ({
+            persistentVolumeClaims: response.items.map((pvc: k8s.V1PersistentVolumeClaim) => ({
               name: pvc.metadata?.name,
               namespace: pvc.metadata?.namespace,
               status: pvc.status?.phase,
@@ -82,9 +82,9 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
               age: pvc.metadata?.creationTimestamp,
               isBound: pvc.status?.phase === "Bound",
             })),
-            total: response.body.items.length,
-            bound: response.body.items.filter((p: k8s.V1PersistentVolumeClaim) => p.status?.phase === "Bound").length,
-            unbound: response.body.items.filter((p: k8s.V1PersistentVolumeClaim) => p.status?.phase !== "Bound").length,
+            total: response.items.length,
+            bound: response.items.filter((p: k8s.V1PersistentVolumeClaim) => p.status?.phase === "Bound").length,
+            unbound: response.items.filter((p: k8s.V1PersistentVolumeClaim) => p.status?.phase !== "Bound").length,
           };
         } catch (error) {
           const context: ErrorContext = { operation: "k8s_list_pvcs", namespace };
@@ -110,9 +110,9 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
       handler: async () => {
         try {
           const storageApi = (k8sClient as any).kc.makeApiClient(k8s.StorageV1Api);
-          const response = await storageApi.listStorageClass();
+          const response = await storageApi.listStorageClass({});
           return {
-            storageClasses: response.body.items.map((sc: k8s.V1StorageClass) => ({
+            storageClasses: response.items.map((sc: k8s.V1StorageClass) => ({
               name: sc.metadata?.name,
               provisioner: sc.provisioner,
               reclaimPolicy: sc.reclaimPolicy,
@@ -155,8 +155,7 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
         try {
           validateResourceName(name, "persistentvolume");
           const coreApi = k8sClient.getCoreV1Api();
-          const result = await coreApi.readPersistentVolume(name);
-          const pv = result.body;
+          const pv = await coreApi.readPersistentVolume({ name });
 
           return {
             name: pv.metadata?.name,
@@ -211,8 +210,7 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
         try {
           validateResourceName(name, "storageclass");
           const storageApi = (k8sClient as any).kc.makeApiClient(k8s.StorageV1Api);
-          const result = await storageApi.readStorageClass(name);
-          const sc = result.body;
+          const sc = await storageApi.readStorageClass({ name });
 
           return {
             name: sc.metadata?.name,
@@ -263,26 +261,26 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
           validateResourceName(name, "pvc");
           const coreApi = k8sClient.getCoreV1Api();
           const [pvc, events] = await Promise.all([
-            coreApi.readNamespacedPersistentVolumeClaim(name, namespace || "default"),
+            coreApi.readNamespacedPersistentVolumeClaim({ name, namespace: namespace || "default" }),
             k8sClient.listEvents(namespace || "default", `involvedObject.name=${name}`),
           ]);
 
           return {
-            name: pvc.body.metadata?.name,
-            namespace: pvc.body.metadata?.namespace,
+            name: pvc.metadata?.name,
+            namespace: pvc.metadata?.namespace,
             spec: {
-              accessModes: pvc.body.spec?.accessModes,
-              storageClassName: pvc.body.spec?.storageClassName,
-              volumeName: pvc.body.spec?.volumeName,
-              volumeMode: pvc.body.spec?.volumeMode,
-              resources: pvc.body.spec?.resources,
-              selector: pvc.body.spec?.selector,
+              accessModes: pvc.spec?.accessModes,
+              storageClassName: pvc.spec?.storageClassName,
+              volumeName: pvc.spec?.volumeName,
+              volumeMode: pvc.spec?.volumeMode,
+              resources: pvc.spec?.resources,
+              selector: pvc.spec?.selector,
             },
             status: {
-              phase: pvc.body.status?.phase,
-              accessModes: pvc.body.status?.accessModes,
-              capacity: pvc.body.status?.capacity,
-              conditions: pvc.body.status?.conditions?.map((c: k8s.V1PersistentVolumeClaimCondition) => ({
+              phase: pvc.status?.phase,
+              accessModes: pvc.status?.accessModes,
+              capacity: pvc.status?.capacity,
+              conditions: pvc.status?.conditions?.map((c: k8s.V1PersistentVolumeClaimCondition) => ({
                 type: c.type,
                 status: c.status,
                 reason: c.reason,
@@ -328,10 +326,10 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
         try {
           const coreApi = k8sClient.getCoreV1Api();
           const response = namespace
-            ? await coreApi.listNamespacedPersistentVolumeClaim(namespace)
-            : await coreApi.listPersistentVolumeClaimForAllNamespaces();
+            ? await coreApi.listNamespacedPersistentVolumeClaim({ namespace })
+            : await coreApi.listPersistentVolumeClaimForAllNamespaces({});
 
-          const unboundPvcs = response.body.items.filter(
+          const unboundPvcs = response.items.filter(
             (pvc: k8s.V1PersistentVolumeClaim) => pvc.status?.phase !== "Bound"
           );
 
@@ -344,7 +342,7 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
               storageClass: pvc.spec?.storageClassName,
               age: pvc.metadata?.creationTimestamp,
             })),
-            totalPvcs: response.body.items.length,
+            totalPvcs: response.items.length,
             unboundCount: unboundPvcs.length,
           };
         } catch (error) {
@@ -374,43 +372,43 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
           const storageApi = (k8sClient as any).kc.makeApiClient(k8s.StorageV1Api);
 
           const [pvs, pvcs, storageClasses] = await Promise.all([
-            coreApi.listPersistentVolume(),
-            coreApi.listPersistentVolumeClaimForAllNamespaces(),
-            storageApi.listStorageClass(),
+            coreApi.listPersistentVolume({}),
+            coreApi.listPersistentVolumeClaimForAllNamespaces({}),
+            storageApi.listStorageClass({}),
           ]);
 
-          const totalCapacity = pvs.body.items.reduce(
+          const totalCapacity = pvs.items.reduce(
             (sum: number, pv: k8s.V1PersistentVolume) =>
               sum + (parseInt(pv.spec?.capacity?.storage || "0") || 0),
             0
           );
 
-          const usedCapacity = pvcs.body.items.reduce(
+          const usedCapacity = pvcs.items.reduce(
             (sum: number, pvc: k8s.V1PersistentVolumeClaim) =>
               sum + (parseInt(pvc.spec?.resources?.requests?.storage || "0") || 0),
             0
           );
 
-          const boundPvcs = pvcs.body.items.filter(
+          const boundPvcs = pvcs.items.filter(
             (pvc: k8s.V1PersistentVolumeClaim) => pvc.status?.phase === "Bound"
           ).length;
 
           return {
             persistentVolumes: {
-              total: pvs.body.items.length,
-              available: pvs.body.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Available").length,
-              bound: pvs.body.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Bound").length,
-              released: pvs.body.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Released").length,
-              failed: pvs.body.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Failed").length,
+              total: pvs.items.length,
+              available: pvs.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Available").length,
+              bound: pvs.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Bound").length,
+              released: pvs.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Released").length,
+              failed: pvs.items.filter((pv: k8s.V1PersistentVolume) => pv.status?.phase === "Failed").length,
             },
             persistentVolumeClaims: {
-              total: pvcs.body.items.length,
+              total: pvcs.items.length,
               bound: boundPvcs,
-              pending: pvcs.body.items.filter((pvc: k8s.V1PersistentVolumeClaim) => pvc.status?.phase === "Pending").length,
+              pending: pvcs.items.filter((pvc: k8s.V1PersistentVolumeClaim) => pvc.status?.phase === "Pending").length,
             },
             storageClasses: {
-              total: storageClasses.body.items.length,
-              default: storageClasses.body.items.filter(
+              total: storageClasses.items.length,
+              default: storageClasses.items.filter(
                 (sc: k8s.V1StorageClass) =>
                   sc.metadata?.annotations?.["storageclass.kubernetes.io/is-default-storageclass"] === "true"
               ).length,
@@ -474,7 +472,7 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await coreApi.deleteNamespacedPersistentVolumeClaim(name, ns, undefined, options);
+          await coreApi.deleteNamespacedPersistentVolumeClaim({ name, namespace: ns });
           
           return {
             success: true,
@@ -583,18 +581,18 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
             },
           };
           
-          const result = await coreApi.createNamespacedPersistentVolumeClaim(ns, pvc);
+          const result = await coreApi.createNamespacedPersistentVolumeClaim({ namespace: ns, body: pvc });
           
           return {
             success: true,
             message: `PVC ${name} created in namespace ${ns}`,
             pvc: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
               size,
-              storageClass: result.body.spec?.storageClassName,
-              accessModes: result.body.spec?.accessModes,
-              phase: result.body.status?.phase,
+              storageClass: result.spec?.storageClassName,
+              accessModes: result.spec?.accessModes,
+              phase: result.status?.phase,
             },
           };
         } catch (error) {
@@ -731,19 +729,19 @@ export function registerStorageTools(k8sClient: K8sClient): { tool: Tool; handle
             spec: pvSpec,
           };
           
-          const result = await coreApi.createPersistentVolume(pv);
+          const result = await coreApi.createPersistentVolume({ body: pv });
           
           return {
             success: true,
             message: `PersistentVolume ${name} created`,
             pv: {
-              name: result.body.metadata?.name,
+              name: result.metadata?.name,
               capacity,
-              accessModes: result.body.spec?.accessModes,
-              storageClass: result.body.spec?.storageClassName,
-              reclaimPolicy: result.body.spec?.persistentVolumeReclaimPolicy,
-              phase: result.body.status?.phase,
-              source: getPVSource(result.body.spec),
+              accessModes: result.spec?.accessModes,
+              storageClass: result.spec?.storageClassName,
+              reclaimPolicy: result.spec?.persistentVolumeReclaimPolicy,
+              phase: result.status?.phase,
+              source: getPVSource(result.spec),
             },
           };
         } catch (error) {

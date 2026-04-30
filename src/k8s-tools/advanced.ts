@@ -564,16 +564,13 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
         try {
           validateNamespace(namespace);
           const coreApi = k8sClient.getCoreV1Api();
-          const response = await coreApi.listNamespacedPod(
+          const response = await coreApi.listNamespacedPod({
             namespace,
-            undefined,
-            undefined,
-            undefined,
-            status ? `status.phase=${status}` : undefined,
+            fieldSelector: status ? `status.phase=${status}` : undefined,
             labelSelector
-          );
+          });
           
-          const pods = response.body.items;
+          const pods = response.items;
           
           if (pods.length === 0) {
             return {
@@ -600,7 +597,7 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
 
           for (const pod of pods) {
             try {
-              await coreApi.deleteNamespacedPod(pod.metadata?.name || "", namespace);
+              await coreApi.deleteNamespacedPod({ name: pod.metadata?.name || "", namespace });
               deleted++;
             } catch (error) {
               failed.push(pod.metadata?.name || "");
@@ -1248,8 +1245,8 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             case "svc":
               if (name) {
                 const coreApi = k8sClient.getCoreV1Api();
-                const result = await coreApi.readNamespacedService(name, ns);
-                data = result.body;
+                const result = await coreApi.readNamespacedService({ name, namespace: ns });
+                data = result;
               } else {
                 data = { items: await k8sClient.listServices(namespace) };
               }
@@ -1259,8 +1256,8 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             case "cm":
               if (name) {
                 const coreApi = k8sClient.getCoreV1Api();
-                const result = await coreApi.readNamespacedConfigMap(name, ns);
-                data = result.body;
+                const result = await coreApi.readNamespacedConfigMap({ name, namespace: ns });
+                data = result;
               } else {
                 data = { items: await k8sClient.listConfigMaps(namespace) };
               }
@@ -1269,8 +1266,8 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             case "secrets":
               if (name) {
                 const coreApi = k8sClient.getCoreV1Api();
-                const result = await coreApi.readNamespacedSecret(name, ns);
-                data = result.body;
+                const result = await coreApi.readNamespacedSecret({ name, namespace: ns });
+                data = result;
               } else {
                 data = { items: await k8sClient.listSecrets(namespace) };
               }
@@ -1615,17 +1612,19 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
           switch (resource.toLowerCase()) {
             case "pod":
             case "pods":
-              result = await coreApi.patchNamespacedPod(
+              result = await coreApi.patchNamespacedPod({
                 name,
-                ns,
-                patchData,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": contentType } }
-              );
+                namespace: ns,
+                body: patchData,
+              }, {
+                middleware: [{
+                  pre: (context: k8s.RequestContext) => {
+                    context.setHeaderParam("Content-Type", contentType);
+                    return Promise.resolve(context);
+                  },
+                  post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                }]
+              } as any);
               break;
               
             case "deployment":
@@ -1633,29 +1632,33 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
               if (subresource === "scale") {
                 // Handle scale subresource specially
                 const scaleApi = (k8sClient as any).kc.makeApiClient(k8s.AutoscalingV1Api);
-                result = await scaleApi.patchNamespacedDeploymentScale(
+                result = await scaleApi.patchNamespacedDeploymentScale({
                   name,
-                  ns,
-                  patchData,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  { headers: { "Content-Type": contentType } }
-                );
+                  namespace: ns,
+                  body: patchData,
+                }, {
+                  middleware: [{
+                    pre: (context: k8s.RequestContext) => {
+                      context.setHeaderParam("Content-Type", contentType);
+                      return Promise.resolve(context);
+                    },
+                    post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                  }]
+                } as any);
               } else {
-                result = await appsApi.patchNamespacedDeployment(
+                result = await appsApi.patchNamespacedDeployment({
                   name,
-                  ns,
-                  patchData,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  undefined,
-                  { headers: { "Content-Type": contentType } }
-                );
+                  namespace: ns,
+                  body: patchData,
+                }, {
+                  middleware: [{
+                    pre: (context: k8s.RequestContext) => {
+                      context.setHeaderParam("Content-Type", contentType);
+                      return Promise.resolve(context);
+                    },
+                    post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                  }]
+                } as any);
               }
               break;
               
@@ -1667,64 +1670,72 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             case "service":
             case "services":
             case "svc":
-              result = await coreApi.patchNamespacedService(
+              result = await coreApi.patchNamespacedService({
                 name,
-                ns,
-                patchData,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": contentType } }
-              );
+                namespace: ns,
+                body: patchData,
+              }, {
+                middleware: [{
+                  pre: (context: k8s.RequestContext) => {
+                    context.setHeaderParam("Content-Type", contentType);
+                    return Promise.resolve(context);
+                  },
+                  post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                }]
+              } as any);
               break;
               
             case "configmap":
             case "configmaps":
             case "cm":
-              result = await coreApi.patchNamespacedConfigMap(
+              result = await coreApi.patchNamespacedConfigMap({
                 name,
-                ns,
-                patchData,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": contentType } }
-              );
+                namespace: ns,
+                body: patchData,
+              }, {
+                middleware: [{
+                  pre: (context: k8s.RequestContext) => {
+                    context.setHeaderParam("Content-Type", contentType);
+                    return Promise.resolve(context);
+                  },
+                  post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                }]
+              } as any);
               break;
               
             case "secret":
             case "secrets":
-              result = await coreApi.patchNamespacedSecret(
+              result = await coreApi.patchNamespacedSecret({
                 name,
-                ns,
-                patchData,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": contentType } }
-              );
+                namespace: ns,
+                body: patchData,
+              }, {
+                middleware: [{
+                  pre: (context: k8s.RequestContext) => {
+                    context.setHeaderParam("Content-Type", contentType);
+                    return Promise.resolve(context);
+                  },
+                  post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                }]
+              } as any);
               break;
               
             case "serviceaccount":
             case "sa":
             case "serviceaccounts":
-              result = await coreApi.patchNamespacedServiceAccount(
+              result = await coreApi.patchNamespacedServiceAccount({
                 name,
-                ns,
-                patchData,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                { headers: { "Content-Type": contentType } }
-              );
+                namespace: ns,
+                body: patchData,
+              }, {
+                middleware: [{
+                  pre: (context: k8s.RequestContext) => {
+                    context.setHeaderParam("Content-Type", contentType);
+                    return Promise.resolve(context);
+                  },
+                  post: (response: k8s.ResponseContext) => Promise.resolve(response)
+                }]
+              } as any);
               break;
               
             default:
@@ -1740,7 +1751,7 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             namespace: ns,
             patchType: patchType || "strategic",
             subresource,
-            patched: result?.body ? "success" : "unknown",
+            patched: result ? "success" : "unknown",
             message: `Patched ${resource}/${name}${subresource ? `/${subresource}` : ""}`,
           };
         } catch (error) {
@@ -1755,22 +1766,32 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
               const appsApi = (k8sClient as any).kc.makeApiClient(k8s.AppsV1Api);
               let result: any;
               
+              const patchOptions = {
+                middleware: [{
+                  pre: async (context: any) => {
+                    context.setHeaderParam("Content-Type", contentType);
+                    return context;
+                  },
+                  post: async (response: any) => response
+                }]
+              } as any;
+              
               switch (resource.toLowerCase()) {
                 case "pod":
                 case "pods":
-                  result = await coreApi.patchNamespacedPod(name, ns, patchData, undefined, undefined, undefined, undefined, undefined, { headers: { "Content-Type": contentType } });
+                  result = await coreApi.patchNamespacedPod({ name, namespace: ns, body: patchData }, patchOptions);
                   break;
                 case "deployment":
                 case "deployments":
-                  result = await appsApi.patchNamespacedDeployment(name, ns, patchData, undefined, undefined, undefined, undefined, undefined, { headers: { "Content-Type": contentType } });
+                  result = await appsApi.patchNamespacedDeployment({ name, namespace: ns, body: patchData }, patchOptions);
                   break;
                 case "service":
                 case "services":
-                  result = await coreApi.patchNamespacedService(name, ns, patchData, undefined, undefined, undefined, undefined, undefined, { headers: { "Content-Type": contentType } });
+                  result = await coreApi.patchNamespacedService({ name, namespace: ns, body: patchData }, patchOptions);
                   break;
                 case "configmap":
                 case "configmaps":
-                  result = await coreApi.patchNamespacedConfigMap(name, ns, patchData, undefined, undefined, undefined, undefined, undefined, { headers: { "Content-Type": contentType } });
+                  result = await coreApi.patchNamespacedConfigMap({ name, namespace: ns, body: patchData }, patchOptions);
                   break;
                 default:
                   throw error; // Re-throw if no fallback available
@@ -2096,59 +2117,59 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
           switch (kind) {
             case "pod":
             case "pods":
-              await coreApi.deleteNamespacedPod(resName, resNs, undefined, undefined, grace, forceDelete, undefined, options);
+              await coreApi.deleteNamespacedPod({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "deployment":
             case "deployments":
-              await appsApi.deleteNamespacedDeployment(resName, resNs, undefined, options);
+              await appsApi.deleteNamespacedDeployment({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "replicaset":
             case "replicasets":
             case "rs":
-              await appsApi.deleteNamespacedReplicaSet(resName, resNs, undefined, options);
+              await appsApi.deleteNamespacedReplicaSet({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "statefulset":
             case "statefulsets":
             case "sts":
-              await appsApi.deleteNamespacedStatefulSet(resName, resNs, undefined, options);
+              await appsApi.deleteNamespacedStatefulSet({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "daemonset":
             case "daemonsets":
             case "ds":
-              await appsApi.deleteNamespacedDaemonSet(resName, resNs, undefined, options);
+              await appsApi.deleteNamespacedDaemonSet({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "service":
             case "services":
             case "svc":
-              await coreApi.deleteNamespacedService(resName, resNs, undefined, options);
+              await coreApi.deleteNamespacedService({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "configmap":
             case "configmaps":
             case "cm":
-              await coreApi.deleteNamespacedConfigMap(resName, resNs, undefined, options);
+              await coreApi.deleteNamespacedConfigMap({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "secret":
             case "secrets":
-              await coreApi.deleteNamespacedSecret(resName, resNs, undefined, options);
+              await coreApi.deleteNamespacedSecret({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "job":
             case "jobs":
-              await batchApi.deleteNamespacedJob(resName, resNs, undefined, options);
+              await batchApi.deleteNamespacedJob({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "cronjob":
             case "cronjobs":
             case "cj":
-              await batchApi.deleteNamespacedCronJob(resName, resNs, undefined, options);
+              await batchApi.deleteNamespacedCronJob({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "ingress":
             case "ingresses":
             case "ing":
-              await netApi.deleteNamespacedIngress(resName, resNs, undefined, options);
+              await netApi.deleteNamespacedIngress({ name: resName, namespace: resNs, ...options }, {});
               break;
             case "pvc":
             case "persistentvolumeclaim":
             case "persistentvolumeclaims":
-              await coreApi.deleteNamespacedPersistentVolumeClaim(resName, resNs, undefined, options);
+              await coreApi.deleteNamespacedPersistentVolumeClaim({ name: resName, namespace: resNs, ...options }, {});
               break;
             default:
               throw new Error(`Delete not supported for ${kind}`);
@@ -2191,17 +2212,17 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             case "pod":
             case "pods": {
               const response = allNs 
-                ? await coreApi.listPodForAllNamespaces(undefined, undefined, undefined, selector, undefined)
-                : await coreApi.listNamespacedPod(ns, undefined, undefined, undefined, selector, undefined);
-              return response.body.items;
+                ? await coreApi.listPodForAllNamespaces({ labelSelector: selector })
+                : await coreApi.listNamespacedPod({ namespace: ns, labelSelector: selector });
+              return response.items;
             }
             case "service":
             case "services":
             case "svc": {
               const response = allNs
-                ? await coreApi.listServiceForAllNamespaces(undefined, undefined, undefined, selector, undefined)
-                : await coreApi.listNamespacedService(ns, undefined, undefined, undefined, selector, undefined);
-              return response.body.items;
+                ? await coreApi.listServiceForAllNamespaces({ labelSelector: selector })
+                : await coreApi.listNamespacedService({ namespace: ns, labelSelector: selector });
+              return response.items;
             }
             default:
               // For unsupported types, return all and filter client-side
@@ -2279,8 +2300,8 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             case "svc":
               if (name) {
                 const coreApi = k8sClient.getCoreV1Api();
-                const result = await coreApi.readNamespacedService(name, ns);
-                data = result.body;
+                const result = await coreApi.readNamespacedService({ name, namespace: ns });
+                data = result;
               } else {
                 data = { items: await k8sClient.listServices(namespace) };
               }
@@ -2402,50 +2423,50 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
           switch (resource.toLowerCase()) {
             case "pod":
             case "pods":
-              result = await coreApi.patchNamespacedPod(name, ns, patch);
+              result = await coreApi.patchNamespacedPod({ name, namespace: ns, body: patch }, {});
               break;
             case "deployment":
             case "deployments":
-              result = await appsApi.patchNamespacedDeployment(name, ns, patch);
+              result = await appsApi.patchNamespacedDeployment({ name, namespace: ns, body: patch }, {});
               break;
             case "service":
             case "svc":
             case "services":
-              result = await coreApi.patchNamespacedService(name, ns, patch);
+              result = await coreApi.patchNamespacedService({ name, namespace: ns, body: patch }, {});
               break;
             case "configmap":
             case "configmaps":
             case "cm":
-              result = await coreApi.patchNamespacedConfigMap(name, ns, patch);
+              result = await coreApi.patchNamespacedConfigMap({ name, namespace: ns, body: patch }, {});
               break;
             case "secret":
             case "secrets":
-              result = await coreApi.patchNamespacedSecret(name, ns, patch);
+              result = await coreApi.patchNamespacedSecret({ name, namespace: ns, body: patch }, {});
               break;
             case "statefulset":
             case "statefulsets":
             case "sts":
-              result = await appsApi.patchNamespacedStatefulSet(name, ns, patch);
+              result = await appsApi.patchNamespacedStatefulSet({ name, namespace: ns, body: patch }, {});
               break;
             case "daemonset":
             case "daemonsets":
             case "ds":
-              result = await appsApi.patchNamespacedDaemonSet(name, ns, patch);
+              result = await appsApi.patchNamespacedDaemonSet({ name, namespace: ns, body: patch }, {});
               break;
             case "replicaset":
             case "replicasets":
             case "rs":
-              result = await appsApi.patchNamespacedReplicaSet(name, ns, patch);
+              result = await appsApi.patchNamespacedReplicaSet({ name, namespace: ns, body: patch }, {});
               break;
             case "ingress":
             case "ingresses":
             case "ing":
-              result = await netApi.patchNamespacedIngress(name, ns, patch);
+              result = await netApi.patchNamespacedIngress({ name, namespace: ns, body: patch }, {});
               break;
             case "node":
             case "nodes":
             case "no":
-              result = await coreApi.patchNode(name, patch);
+              result = await coreApi.patchNode({ name, body: patch }, {});
               break;
             default:
               return {
@@ -2540,50 +2561,58 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             }
           }
           
-          const patchOptions = { headers: { "Content-Type": "application/strategic-merge-patch+json" } };
+          const patchOptions = {
+            middleware: [{
+              pre: async (context: any) => {
+                context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                return context;
+              },
+              post: async (response: any) => response
+            }]
+          } as any;
           
           switch (resource.toLowerCase()) {
             case "pod":
             case "pods":
-              await coreApi.patchNamespacedPod(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedPod({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "deployment":
             case "deployments":
-              await appsApi.patchNamespacedDeployment(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedDeployment({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "service":
             case "svc":
             case "services":
-              await coreApi.patchNamespacedService(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedService({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "configmap":
             case "configmaps":
             case "cm":
-              await coreApi.patchNamespacedConfigMap(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedConfigMap({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "secret":
             case "secrets":
-              await coreApi.patchNamespacedSecret(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedSecret({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "statefulset":
             case "statefulsets":
             case "sts":
-              await appsApi.patchNamespacedStatefulSet(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedStatefulSet({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "daemonset":
             case "daemonsets":
             case "ds":
-              await appsApi.patchNamespacedDaemonSet(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedDaemonSet({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "replicaset":
             case "replicasets":
             case "rs":
-              await appsApi.patchNamespacedReplicaSet(name, ns, labelPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedReplicaSet({ name, namespace: ns, body: labelPatch }, patchOptions);
               break;
             case "node":
             case "nodes":
             case "no":
-              await coreApi.patchNode(name, labelPatch);
+              await coreApi.patchNode({ name, body: labelPatch }, patchOptions);
               break;
             default:
               return {
@@ -2673,50 +2702,58 @@ export function registerAdvancedTools(k8sClient: K8sClient, cacheManager?: Cache
             }
           }
           
-          const patchOptions = { headers: { "Content-Type": "application/strategic-merge-patch+json" } };
+          const patchOptions = {
+            middleware: [{
+              pre: async (context: any) => {
+                context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+                return context;
+              },
+              post: async (response: any) => response
+            }]
+          } as any;
           
           switch (resource.toLowerCase()) {
             case "pod":
             case "pods":
-              await coreApi.patchNamespacedPod(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedPod({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "deployment":
             case "deployments":
-              await appsApi.patchNamespacedDeployment(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedDeployment({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "service":
             case "svc":
             case "services":
-              await coreApi.patchNamespacedService(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedService({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "configmap":
             case "configmaps":
             case "cm":
-              await coreApi.patchNamespacedConfigMap(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedConfigMap({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "secret":
             case "secrets":
-              await coreApi.patchNamespacedSecret(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await coreApi.patchNamespacedSecret({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "statefulset":
             case "statefulsets":
             case "sts":
-              await appsApi.patchNamespacedStatefulSet(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedStatefulSet({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "daemonset":
             case "daemonsets":
             case "ds":
-              await appsApi.patchNamespacedDaemonSet(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedDaemonSet({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "replicaset":
             case "replicasets":
             case "rs":
-              await appsApi.patchNamespacedReplicaSet(name, ns, annotationPatch, undefined, undefined, undefined, undefined, undefined, patchOptions);
+              await appsApi.patchNamespacedReplicaSet({ name, namespace: ns, body: annotationPatch }, patchOptions);
               break;
             case "node":
             case "nodes":
             case "no":
-              await coreApi.patchNode(name, annotationPatch);
+              await coreApi.patchNode({ name, body: annotationPatch }, patchOptions);
               break;
             default:
               return {

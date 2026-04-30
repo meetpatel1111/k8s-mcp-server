@@ -398,8 +398,8 @@ export function registerClusterTools(k8sClient: K8sClient): { tool: Tool; handle
             k8sClient.getClusterVersion(),
             k8sClient.listNodes(),
             k8sClient.listNamespaces(),
-            coreApi.listEventForAllNamespaces(undefined, undefined, undefined, undefined),
-            coreApi.listComponentStatus(),
+            coreApi.listEventForAllNamespaces({}, {}),
+            coreApi.listComponentStatus({}, {}),
           ]);
           
           const dump: any = {
@@ -418,7 +418,7 @@ export function registerClusterTools(k8sClient: K8sClient): { tool: Tool; handle
               unschedulable: n.spec?.unschedulable,
             })),
             namespaces: allNamespaces.map((n: any) => n.metadata?.name),
-            events: events.body.items.slice(0, 100).map((e: any) => ({
+            events: events.items.slice(0, 100).map((e: any) => ({
               type: e.type,
               reason: e.reason,
               message: e.message,
@@ -428,7 +428,7 @@ export function registerClusterTools(k8sClient: K8sClient): { tool: Tool; handle
               firstTimestamp: e.firstTimestamp,
               lastTimestamp: e.lastTimestamp,
             })),
-            componentStatuses: componentStatuses.body.items?.map((c: any) => ({
+            componentStatuses: componentStatuses.items?.map((c: any) => ({
               name: c.metadata?.name,
               conditions: c.conditions,
             })),
@@ -481,7 +481,7 @@ export function registerClusterTools(k8sClient: K8sClient): { tool: Tool; handle
             summary: {
               nodes: nodes.length,
               namespaces: allNamespaces.length,
-              events: events.body.items.length,
+              events: events.items.length,
               workloadsCollected: Object.keys(dump.workloads).length,
             },
             note: outputDirectory 

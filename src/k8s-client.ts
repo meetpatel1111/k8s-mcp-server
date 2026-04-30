@@ -477,7 +477,7 @@ export class K8sClient {
     return this.retryWithBackoff(
       async () => {
         const response = await this.coreV1Api.listComponentStatus();
-        return response.body.items || [];
+        return response.items || [];
       },
       "List component statuses"
     );
@@ -496,11 +496,23 @@ export class K8sClient {
     return this.batchV1Api;
   }
 
+  getNetworkingV1Api(): k8s.NetworkingV1Api {
+    return this.networkingV1Api;
+  }
+
+  getStorageV1Api(): k8s.StorageV1Api {
+    return this.storageV1Api;
+  }
+
+  getRbacV1Api(): k8s.RbacAuthorizationV1Api {
+    return this.rbacV1Api;
+  }
+
   async listNodes(): Promise<k8s.V1Node[]> {
     return this.retryWithBackoff(
       async () => {
         const response = await this.coreV1Api.listNode();
-        return response.body.items || [];
+        return response.items || [];
       },
       "List nodes"
     );
@@ -511,8 +523,8 @@ export class K8sClient {
     
     return this.retryWithBackoff(
       async () => {
-        const response = await this.coreV1Api.readNode(name);
-        if (!response.body) {
+        const response = await this.coreV1Api.readNode({ name }, {});
+        if (!response) {
           throw new K8sMcpError(
             "not_found",
             `Node ${name} not found`,
@@ -521,23 +533,28 @@ export class K8sClient {
             ["Check node name is correct", "List nodes to see available nodes"]
           );
         }
-        return response.body;
+        return response;
       },
       `Get node ${name}`
     );
   }
 
   async patchNode(name: string, patch: any): Promise<k8s.V1Node> {
-    const response = await this.coreV1Api.patchNode(
-      name,
-      patch,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      { headers: { "Content-Type": "application/strategic-merge-patch+json" } } as any
-    );
-    return response.body;
+    return safeExecute(async () => {
+      const response = await this.coreV1Api.patchNode({
+        name,
+        body: patch,
+      }, {
+        middleware: [{
+          pre: (context: k8s.RequestContext) => {
+            context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+            return Promise.resolve(context);
+          },
+          post: (response: k8s.ResponseContext) => Promise.resolve(response)
+        }]
+      } as any);
+      return response;
+    }, { operation: "patchNode", resource: name });
   }
 
   // Pods
@@ -550,9 +567,9 @@ export class K8sClient {
    */
   async listPods(namespace?: string, limit?: number): Promise<k8s.V1Pod[]> {
     const response = namespace 
-      ? await this.coreV1Api.listNamespacedPod(namespace, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit)
-      : await this.coreV1Api.listPodForAllNamespaces(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit);
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedPod({ namespace, limit })
+      : await this.coreV1Api.listPodForAllNamespaces({ limit });
+    return response.items || [];
   }
 
   /**
@@ -562,8 +579,8 @@ export class K8sClient {
    * @returns Pod object
    */
   async getPod(name: string, namespace: string): Promise<k8s.V1Pod> {
-    const response = await this.coreV1Api.readNamespacedPod(name, namespace);
-    return response.body;
+    const response = await this.coreV1Api.readNamespacedPod({ name, namespace });
+    return response;
   }
 
   /**
@@ -572,7 +589,7 @@ export class K8sClient {
    * @param namespace - Pod namespace
    */
   async deletePod(name: string, namespace: string): Promise<void> {
-    await this.coreV1Api.deleteNamespacedPod(name, namespace);
+    await this.coreV1Api.deleteNamespacedPod({ name, namespace });
   }
 
   /**
@@ -602,12 +619,12 @@ export class K8sClient {
     try {
       // Note: follow=true is not fully supported in MCP context due to streaming limitations
       // The response will be truncated to initial logs only
-      const response = await this.coreV1Api.readNamespacedPodLog(
+      const response = await (this.coreV1Api as any).readNamespacedPodLog({
         name,
         namespace,
         container
-      );
-      return response.body;
+      });
+      return response;
     } catch (error: any) {
       // Log the actual error for debugging
       console.error(`Log retrieval error for ${name}/${namespace}:`, error?.message || error);
@@ -636,58 +653,41 @@ export class K8sClient {
           case "Deployment":
             return await this.getDeployment(r.name, ns);
           case "Service":
-            const svcResponse = await this.coreV1Api.readNamespacedService(r.name, ns);
-            return svcResponse.body;
+            return await this.coreV1Api.readNamespacedService({ name: r.name, namespace: ns });
           case "ConfigMap":
-            const cmResponse = await this.coreV1Api.readNamespacedConfigMap(r.name, ns);
-            return cmResponse.body;
+            return await this.coreV1Api.readNamespacedConfigMap({ name: r.name, namespace: ns });
           case "Secret":
-            const secretResponse = await this.coreV1Api.readNamespacedSecret(r.name, ns);
-            return secretResponse.body;
+            return await this.coreV1Api.readNamespacedSecret({ name: r.name, namespace: ns });
           case "Node":
             return await this.getNode(r.name);
           case "Namespace":
-            const nsResponse = await this.coreV1Api.readNamespace(r.name);
-            return nsResponse.body;
+            return await this.coreV1Api.readNamespace({ name: r.name });
           case "StatefulSet":
-            const stsResponse = await this.appsV1Api.readNamespacedStatefulSet(r.name, ns);
-            return stsResponse.body;
+            return await this.appsV1Api.readNamespacedStatefulSet({ name: r.name, namespace: ns });
           case "DaemonSet":
-            const dsResponse = await this.appsV1Api.readNamespacedDaemonSet(r.name, ns);
-            return dsResponse.body;
+            return await this.appsV1Api.readNamespacedDaemonSet({ name: r.name, namespace: ns });
           case "Job":
-            const jobResponse = await this.batchV1Api.readNamespacedJob(r.name, ns);
-            return jobResponse.body;
+            return await this.batchV1Api.readNamespacedJob({ name: r.name, namespace: ns });
           case "CronJob":
-            const cjResponse = await this.batchV1Api.readNamespacedCronJob(r.name, ns);
-            return cjResponse.body;
+            return await this.batchV1Api.readNamespacedCronJob({ name: r.name, namespace: ns });
           case "Ingress":
-            const ingResponse = await this.networkingV1Api.readNamespacedIngress(r.name, ns);
-            return ingResponse.body;
+            return await this.networkingV1Api.readNamespacedIngress({ name: r.name, namespace: ns });
           case "PersistentVolumeClaim":
-            const pvcResponse = await this.coreV1Api.readNamespacedPersistentVolumeClaim(r.name, ns);
-            return pvcResponse.body;
+            return await this.coreV1Api.readNamespacedPersistentVolumeClaim({ name: r.name, namespace: ns });
           case "PersistentVolume":
-            const pvResponse = await this.coreV1Api.readPersistentVolume(r.name);
-            return pvResponse.body;
+            return await this.coreV1Api.readPersistentVolume({ name: r.name });
           case "StorageClass":
-            const scResponse = await this.storageV1Api.readStorageClass(r.name);
-            return scResponse.body;
+            return await this.storageV1Api.readStorageClass({ name: r.name });
           case "ServiceAccount":
-            const saResponse = await this.coreV1Api.readNamespacedServiceAccount(r.name, ns);
-            return saResponse.body;
+            return await this.coreV1Api.readNamespacedServiceAccount({ name: r.name, namespace: ns });
           case "Role":
-            const roleResponse = await this.rbacV1Api.readNamespacedRole(r.name, ns);
-            return roleResponse.body;
+            return await this.rbacV1Api.readNamespacedRole({ name: r.name, namespace: ns });
           case "ClusterRole":
-            const crResponse = await this.rbacV1Api.readClusterRole(r.name);
-            return crResponse.body;
+            return await this.rbacV1Api.readClusterRole({ name: r.name });
           case "RoleBinding":
-            const rbResponse = await this.rbacV1Api.readNamespacedRoleBinding(r.name, ns);
-            return rbResponse.body;
+            return await this.rbacV1Api.readNamespacedRoleBinding({ name: r.name, namespace: ns });
           case "ClusterRoleBinding":
-            const crbResponse = await this.rbacV1Api.readClusterRoleBinding(r.name);
-            return crbResponse.body;
+            return await this.rbacV1Api.readClusterRoleBinding({ name: r.name });
           default:
             return { error: `Unsupported resource kind: ${r.kind}` };
         }
@@ -708,7 +708,7 @@ export class K8sClient {
    */
   async listNamespaces(): Promise<k8s.V1Namespace[]> {
     const response = await this.coreV1Api.listNamespace();
-    return response.body.items || [];
+    return response.items || [];
   }
 
   // Deployments
@@ -721,9 +721,9 @@ export class K8sClient {
    */
   async listDeployments(namespace?: string, limit?: number): Promise<k8s.V1Deployment[]> {
     const response = namespace
-      ? await this.appsV1Api.listNamespacedDeployment(namespace, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit)
-      : await this.appsV1Api.listDeploymentForAllNamespaces(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit);
-    return response.body.items || [];
+      ? await this.appsV1Api.listNamespacedDeployment({ namespace, limit })
+      : await this.appsV1Api.listDeploymentForAllNamespaces({ limit });
+    return response.items || [];
   }
 
   /**
@@ -733,8 +733,8 @@ export class K8sClient {
    * @returns Deployment object
    */
   async getDeployment(name: string, namespace: string): Promise<k8s.V1Deployment> {
-    const response = await this.appsV1Api.readNamespacedDeployment(name, namespace);
-    return response.body;
+    const response = await this.appsV1Api.readNamespacedDeployment({ name, namespace });
+    return response;
   }
 
   /**
@@ -746,18 +746,22 @@ export class K8sClient {
    */
   async scaleDeployment(name: string, namespace: string, replicas: number): Promise<k8s.V1Deployment> {
     const patch = { spec: { replicas } };
-    const response = await this.appsV1Api.patchNamespacedDeployment(
-      name,
-      namespace,
-      patch,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-    );
-    return response.body;
+    return safeExecute(async () => {
+      const response = await this.appsV1Api.patchNamespacedDeployment({
+        name,
+        namespace,
+        body: patch,
+      }, {
+        middleware: [{
+          pre: (context: k8s.RequestContext) => {
+            context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+            return Promise.resolve(context);
+          },
+          post: (response: k8s.ResponseContext) => Promise.resolve(response)
+        }]
+      } as any);
+      return response;
+    }, { operation: "scaleDeployment", resource: `${namespace}/${name}` });
   }
 
   /**
@@ -779,21 +783,29 @@ export class K8sClient {
         },
       },
     };
-    const response = await this.appsV1Api.patchNamespacedDeployment(
-      name,
-      namespace,
-      patch,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      { headers: { "Content-Type": "application/strategic-merge-patch+json" } }
-    );
-    return response.body;
+    return safeExecute(async () => {
+      const response = await this.appsV1Api.patchNamespacedDeployment({
+        name,
+        namespace,
+        body: patch,
+      }, {
+        middleware: [{
+          pre: (context: k8s.RequestContext) => {
+            context.setHeaderParam("Content-Type", "application/strategic-merge-patch+json");
+            return Promise.resolve(context);
+          },
+          post: (response: k8s.ResponseContext) => Promise.resolve(response)
+        }]
+      } as any);
+      return response;
+    }, { operation: "restartDeployment", resource: `${namespace}/${name}` });
   }
 
   // Services
+
+  /**
+   * List services in a namespace or across all namespaces
+   * @param namespace - Optional namespace filter
 
   /**
    * List services in a namespace or across all namespaces
@@ -803,9 +815,9 @@ export class K8sClient {
    */
   async listServices(namespace?: string, limit?: number): Promise<k8s.V1Service[]> {
     const response = namespace
-      ? await this.coreV1Api.listNamespacedService(namespace, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit)
-      : await this.coreV1Api.listServiceForAllNamespaces(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit);
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedService({ namespace, limit })
+      : await this.coreV1Api.listServiceForAllNamespaces({ limit });
+    return response.items || [];
   }
 
   // Events
@@ -819,9 +831,9 @@ export class K8sClient {
    */
   async listEvents(namespace?: string, fieldSelector?: string, limit?: number): Promise<k8s.CoreV1Event[]> {
     const response = namespace
-      ? await this.coreV1Api.listNamespacedEvent(namespace, undefined, undefined, undefined, fieldSelector, undefined, undefined, undefined, undefined, undefined, limit)
-      : await this.coreV1Api.listEventForAllNamespaces(undefined, undefined, undefined, fieldSelector, undefined, undefined, undefined, undefined, undefined, limit);
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedEvent({ namespace, fieldSelector, limit })
+      : await this.coreV1Api.listEventForAllNamespaces({ fieldSelector, limit });
+    return response.items || [];
   }
 
   // Jobs
@@ -834,9 +846,9 @@ export class K8sClient {
    */
   async listJobs(namespace?: string, limit?: number): Promise<k8s.V1Job[]> {
     const response = namespace
-      ? await this.batchV1Api.listNamespacedJob(namespace, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit)
-      : await this.batchV1Api.listJobForAllNamespaces(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit);
-    return response.body.items || [];
+      ? await this.batchV1Api.listNamespacedJob({ namespace, limit })
+      : await this.batchV1Api.listJobForAllNamespaces({ limit });
+    return response.items || [];
   }
 
   // CronJobs
@@ -849,9 +861,9 @@ export class K8sClient {
    */
   async listCronJobs(namespace?: string, limit?: number): Promise<k8s.V1CronJob[]> {
     const response = namespace
-      ? await this.batchV1Api.listNamespacedCronJob(namespace, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit)
-      : await this.batchV1Api.listCronJobForAllNamespaces(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, limit);
-    return response.body.items || [];
+      ? await this.batchV1Api.listNamespacedCronJob({ namespace, limit })
+      : await this.batchV1Api.listCronJobForAllNamespaces({ limit });
+    return response.items || [];
   }
 
   // Ingress
@@ -863,9 +875,9 @@ export class K8sClient {
    */
   async listIngresses(namespace?: string): Promise<k8s.V1Ingress[]> {
     const response = namespace
-      ? await this.networkingV1Api.listNamespacedIngress(namespace)
-      : await this.networkingV1Api.listIngressForAllNamespaces();
-    return response.body.items || [];
+      ? await this.networkingV1Api.listNamespacedIngress({ namespace })
+      : await this.networkingV1Api.listIngressForAllNamespaces({});
+    return response.items || [];
   }
 
   // PVC
@@ -877,9 +889,9 @@ export class K8sClient {
    */
   async listPVCs(namespace?: string): Promise<k8s.V1PersistentVolumeClaim[]> {
     const response = namespace
-      ? await this.coreV1Api.listNamespacedPersistentVolumeClaim(namespace)
-      : await this.coreV1Api.listPersistentVolumeClaimForAllNamespaces();
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedPersistentVolumeClaim({ namespace })
+      : await this.coreV1Api.listPersistentVolumeClaimForAllNamespaces({});
+    return response.items || [];
   }
 
   // PV
@@ -889,8 +901,8 @@ export class K8sClient {
    * @returns Array of PVs
    */
   async listPVs(): Promise<k8s.V1PersistentVolume[]> {
-    const response = await this.coreV1Api.listPersistentVolume();
-    return response.body.items || [];
+    const response = await this.coreV1Api.listPersistentVolume({});
+    return response.items || [];
   }
 
   // StorageClasses
@@ -900,8 +912,8 @@ export class K8sClient {
    * @returns Array of storage classes
    */
   async listStorageClasses(): Promise<k8s.V1StorageClass[]> {
-    const response = await this.storageV1Api.listStorageClass();
-    return response.body.items || [];
+    const response = await this.storageV1Api.listStorageClass({});
+    return response.items || [];
   }
 
   // ConfigMaps
@@ -913,9 +925,9 @@ export class K8sClient {
    */
   async listConfigMaps(namespace?: string): Promise<k8s.V1ConfigMap[]> {
     const response = namespace
-      ? await this.coreV1Api.listNamespacedConfigMap(namespace)
-      : await this.coreV1Api.listConfigMapForAllNamespaces();
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedConfigMap({ namespace })
+      : await this.coreV1Api.listConfigMapForAllNamespaces({});
+    return response.items || [];
   }
 
   // Secrets
@@ -927,9 +939,9 @@ export class K8sClient {
    */
   async listSecrets(namespace?: string): Promise<k8s.V1Secret[]> {
     const response = namespace
-      ? await this.coreV1Api.listNamespacedSecret(namespace)
-      : await this.coreV1Api.listSecretForAllNamespaces();
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedSecret({ namespace })
+      : await this.coreV1Api.listSecretForAllNamespaces({});
+    return response.items || [];
   }
 
   // ServiceAccounts
@@ -941,9 +953,9 @@ export class K8sClient {
    */
   async listServiceAccounts(namespace?: string): Promise<k8s.V1ServiceAccount[]> {
     const response = namespace
-      ? await this.coreV1Api.listNamespacedServiceAccount(namespace)
-      : await this.coreV1Api.listServiceAccountForAllNamespaces();
-    return response.body.items || [];
+      ? await this.coreV1Api.listNamespacedServiceAccount({ namespace })
+      : await this.coreV1Api.listServiceAccountForAllNamespaces({});
+    return response.items || [];
   }
 
   // Roles
@@ -955,9 +967,9 @@ export class K8sClient {
    */
   async listRoles(namespace?: string): Promise<k8s.V1Role[]> {
     const response = namespace
-      ? await this.rbacV1Api.listNamespacedRole(namespace)
-      : await this.rbacV1Api.listRoleForAllNamespaces();
-    return response.body.items || [];
+      ? await this.rbacV1Api.listNamespacedRole({ namespace })
+      : await this.rbacV1Api.listRoleForAllNamespaces({});
+    return response.items || [];
   }
 
   // ClusterRoles
@@ -967,8 +979,8 @@ export class K8sClient {
    * @returns Array of cluster roles
    */
   async listClusterRoles(): Promise<k8s.V1ClusterRole[]> {
-    const response = await this.rbacV1Api.listClusterRole();
-    return response.body.items || [];
+    const response = await this.rbacV1Api.listClusterRole({});
+    return response.items || [];
   }
 
   // API group mappings for resource types
@@ -1093,7 +1105,8 @@ export class K8sClient {
   }
 
   // Raw API access with full HTTP method support
-  async rawApiRequest(path: string, options?: { method?: string; body?: any }): Promise<any> {
+  // Raw API access with full HTTP method support
+  async rawApiRequest(path: string, methodOrOptions?: any, body?: any, ...args: any[]): Promise<any> {
     const cluster = this._kc.getCurrentCluster();
     if (!cluster) {
       throw new K8sMcpError(
@@ -1105,23 +1118,46 @@ export class K8sClient {
       );
     }
 
-    const method = options?.method || "GET";
-    const body = options?.body;
+    let method = "GET";
+    let requestBody = body;
+    let extraOptions: any = {};
+
+    if (typeof methodOrOptions === "string") {
+      method = methodOrOptions;
+      requestBody = body;
+      // If there are more args, the last one might be an options object
+      if (args.length > 0) {
+        const lastArg = args[args.length - 1];
+        if (lastArg && typeof lastArg === "object") {
+          extraOptions = lastArg;
+        }
+      }
+    } else if (methodOrOptions && typeof methodOrOptions === "object") {
+      method = methodOrOptions.method || "GET";
+      requestBody = methodOrOptions.body;
+      extraOptions = methodOrOptions;
+    }
+
     const context: ErrorContext = { operation: `rawApiRequest ${method}`, resource: path };
 
     return safeExecute(async () => {
-      const opts: any = {};
-      await this._kc.applyToRequest(opts);
+      const opts: any = {
+        headers: { ...extraOptions.headers },
+        method
+      };
+      
+      // The new way to apply auth/TLS options to a manual request
+      await this._kc.applyToHTTPSOptions(opts);
 
       const url = new URL(path, cluster.server);
       const isHttps = url.protocol === 'https:';
       const httpModule = isHttps ? https : http;
-      const bodyStr = body ? JSON.stringify(body) : undefined;
+      const bodyStr = requestBody ? JSON.stringify(requestBody) : undefined;
 
       return new Promise((resolve, reject) => {
         const headers: Record<string, string> = { ...opts.headers };
         if (bodyStr) {
-          headers["Content-Type"] = "application/json";
+          headers["Content-Type"] = headers["Content-Type"] || "application/json";
           headers["Content-Length"] = String(Buffer.byteLength(bodyStr));
         }
 
@@ -1131,13 +1167,15 @@ export class K8sClient {
           path: url.pathname + url.search,
           method,
           headers,
-          rejectUnauthorized: false,
+          rejectUnauthorized: opts.rejectUnauthorized !== undefined ? opts.rejectUnauthorized : false,
         };
 
-        // Apply TLS options from kubeconfig (CA cert, client cert)
+        // Apply TLS options from kubeconfig (CA cert, client cert, key)
         if (opts.ca) requestOptions.ca = opts.ca;
         if (opts.cert) requestOptions.cert = opts.cert;
         if (opts.key) requestOptions.key = opts.key;
+        if (opts.pfx) requestOptions.pfx = opts.pfx;
+        if (opts.passphrase) requestOptions.passphrase = opts.passphrase;
 
         const req = httpModule.request(requestOptions, (res: any) => {
           let data = '';

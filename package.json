@@ -1,6 +1,6 @@
 {
   "name": "k8s-helm-mcp",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "Production-grade Kubernetes MCP Server - Complete kubectl coverage with Infrastructure Protection, Helm support, Diagnostics, Response Caching, 260+ tools, Direct Exec, OpenTelemetry",
   "type": "module",
   "main": "dist/index.js",
@@ -50,7 +50,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@kubernetes/client-node": "^0.20.0",
+    "@kubernetes/client-node": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@opentelemetry/api": "^1.7.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.45.1",
