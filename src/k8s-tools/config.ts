@@ -98,6 +98,9 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               resource = cm.body;
               break;
             case "secret":
+              if (!scrub) {
+                throw new Error("SECURITY VIOLATION: Exporting a Secret requires explicitly setting 'scrub: true' to acknowledge sensitive resource handling.");
+              }
               const secret = await k8sClient.getCoreV1Api().readNamespacedSecret(name, ns);
               resource = secret.body;
               // Mask sensitive data
@@ -282,11 +285,16 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               description: "Namespace",
               default: "default",
             },
+            scrub: {
+              type: "boolean",
+              description: "Mask potential secrets in exported YAML",
+              default: false,
+            },
           },
           required: ["kind", "name"],
         },
       },
-      handler: async ({ kind, name, namespace }: { kind: string; name: string; namespace?: string }) => {
+      handler: async ({ kind, name, namespace, scrub }: { kind: string; name: string; namespace?: string; scrub?: boolean }) => {
         const ns = namespace || "default";
         
         // Reuse the export_resource logic
@@ -310,6 +318,9 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               resource = cm.body;
               break;
             case "secret":
+              if (!scrub) {
+                throw new Error("SECURITY VIOLATION: Reading a Secret requires explicitly setting 'scrub: true' to acknowledge sensitive resource handling.");
+              }
               const secret = await coreApi.readNamespacedSecret(name, ns);
               resource = secret.body;
               // Mask sensitive data
@@ -375,8 +386,12 @@ export function registerConfigTools(k8sClient: K8sClient): { tool: Tool; handler
               return { error: `Getting YAML for kind '${kind}' not supported yet. Supported: Pod, Deployment, Service, ConfigMap, Secret, Node, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob, Ingress, PVC, PV` };
           }
 
+          let yamlOutput = yaml.dump(resource, { indent: 2 });
+          if (scrub) {
+            yamlOutput = scrubSensitiveData(yamlOutput);
+          }
           return {
-            yaml: yaml.dump(resource, { indent: 2 }),
+            yaml: yamlOutput,
           };
         } catch (error) {
           const context: ErrorContext = { operation: "k8s_get_resource_yaml", resource: name, namespace: ns };

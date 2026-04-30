@@ -9,6 +9,7 @@
     "build:dev": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
+    "start:secure": "node --max-old-space-size=256 --experimental-permission --allow-fs-read=* --allow-child-process dist/index.js",
     "start:bun": "bun dist/index.js",
     "prepare": "husky install && npm run build",
     "lint": "eslint src/**/*.ts",

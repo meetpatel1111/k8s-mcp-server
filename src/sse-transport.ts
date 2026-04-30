@@ -8,6 +8,7 @@ import { ToolRegistry } from "./tool-registry.js";
 import { loadConfig } from "./config.js";
 import { initializeTelemetry } from "./telemetry.js";
 import { createRequire } from "module";
+import * as crypto from "crypto";
 
 // Import all tool registration functions
 import { registerClusterTools } from "./k8s-tools/cluster.js";
@@ -123,6 +124,15 @@ export async function startSSEServer(port: number = 3000): Promise<void> {
 
   const app = express();
   
+  // Security: Enforce Bearer Token Authentication for HTTP Transport
+  const authToken = process.env.MCP_AUTH_TOKEN || crypto.randomUUID();
+  console.error(`[SECURITY] SSE Transport starting with Authentication ENABLED.`);
+  console.error(`[SECURITY] Clients MUST provide the following header:`);
+  console.error(`[SECURITY] Authorization: Bearer ${authToken}`);
+  if (!process.env.MCP_AUTH_TOKEN) {
+    console.error(`[SECURITY] (Token was auto-generated. Set MCP_AUTH_TOKEN env var to use a static token)`);
+  }
+
   // Enable CORS for web clients
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
@@ -137,6 +147,23 @@ export async function startSSEServer(port: number = 3000): Promise<void> {
   });
 
   app.use(express.json());
+
+  // Require authentication for all routes except /health and OPTIONS preflight
+  app.use((req, res, next) => {
+    if (req.method === "OPTIONS" || req.path === "/health") {
+      return next();
+    }
+    
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${authToken}`) {
+      res.status(401).json({ 
+        error: "Unauthorized", 
+        message: "Valid Authorization Bearer token required for MCP access." 
+      });
+      return;
+    }
+    next();
+  });
 
   // Health check endpoint
   app.get("/health", (req, res) => {

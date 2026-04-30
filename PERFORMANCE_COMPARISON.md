@@ -1,7 +1,7 @@
 # MCP Kubernetes Server Performance & Advanced Features Comparison
 
-**Comparison Date:** April 27, 2026  
-**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.14.0
+**Comparison Date:** April 30, 2026  
+**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.16.0
 
 **Repository Links:**
 - [k8s-mcp-server](https://github.com/meetpatel1111/k8s-mcp-server) - meetpatel1111
@@ -48,7 +48,7 @@
 
 ### Performance Reality
 
-| Metric                             | mcp-server-kubernetes | k8s-mcp-server v0.13.0            | Why                                                   |
+| Metric                             | mcp-server-kubernetes | k8s-mcp-server v0.16.0            | Why                                                   |
 | ------------------------------------| -----------------------| -----------------------------------| -------------------------------------------------------|
 | **Cold Start**                     | 50-100ms              | 50-150ms (Bun) / 200-500ms (Node) | Both support Bun, k8s-mcp-server has more features    |
 | **Request Latency (Read/Write)**   | 80-150ms              | 8-40ms                            | Process spawn vs direct API call + connection pooling |
@@ -62,7 +62,7 @@
 
 ### Feature Completeness
 
-| Category | mcp-server-kubernetes | k8s-mcp-server v0.13.0 |
+| Category | mcp-server-kubernetes | k8s-mcp-server v0.16.0 |
 |----------|---------------------|------------------------|
 | **Tools** | 25 basic tools | 262+ comprehensive tools |
 | **Helm** | 3 operations | 40+ operations (full CLI) |
@@ -77,6 +77,11 @@
 | **Flexible Kubeconfig** | No | Yes (6-source priority) |
 | **Runtime Support** | Bun | Node.js + Bun |
 | **Bundle Size** | Smaller | Larger (acceptable) |
+| **Security Hardening** | Basic | Enterprise-grade (Sanitization, Global Scrubbing) |
+| **Audit Logging** | stdout | Immutable stderr JSON (SIEM-ready) |
+| **Compliance** | N/A | SlowMist, OWASP, MCP Best Practices |
+| **Authentication** | None | Bearer Token (for SSE transport) |
+| **DoS Protection** | No | Yes (Payload & document limits) |
 
 **Insight:** k8s-mcp-server is objectively more feature-complete. The tool count alone (4x difference) indicates broader coverage.
 
@@ -98,6 +103,11 @@
 - ✅ Comprehensive validation (prevents errors)
 - ✅ OpenTelemetry (observability)
 - ✅ Connection pooling (performance)
+- ✅ Enterprise Security (Input Sanitization, Global Scrubbing)
+- ✅ Immutable Audit Logging (stderr/SIEM integration)
+- ✅ Compliance (SlowMist, OWASP, MCP Best Practices)
+- ✅ Bearer Token Authentication (SSE transport)
+- ✅ DoS Protection (Manifest size & document limits)
 - ✅ Flexible kubeconfig (deployment flexibility)
 
 **Insight:** k8s-mcp-server has more production-grade features. Observability can be added; caching/retry/protection are harder to retrofit.

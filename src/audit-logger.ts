@@ -2,10 +2,10 @@
  * Audit Logger - Compliance and security tracking
  */
 
-import { createWriteStream } from "fs";
 import { hostname, userInfo } from "os";
+import { scrubSensitiveData } from "./utils/secret-scrubber.js";
 
-interface AuditEntry {
+export interface AuditEntry {
   timestamp: string;
   user: string;
   tool: string;
@@ -15,22 +15,38 @@ interface AuditEntry {
   success: boolean;
   dataAccessed?: string[];
   clientIp?: string;
+  error?: string;
+  args?: any;
 }
 
 class AuditLogger {
-  private logStream = createWriteStream("k8s-mcp-audit.log", { flags: "a" });
-  private enabled = process.env.K8S_AUDIT_LOG === "true";
+  // Enabled by default for enterprise security, opt-out via env
+  private enabled = process.env.K8S_AUDIT_LOG !== "false";
 
   log(entry: AuditEntry): void {
     if (!this.enabled) return;
 
+    let username = "unknown";
+    try {
+      username = userInfo().username;
+    } catch {
+      // Ignore if userInfo fails (can happen in some container environments)
+    }
+
     const enriched = {
       ...entry,
       hostname: hostname(),
-      uid: userInfo().username,
+      uid: username,
+      // Ensure we have a clear marker for log aggregation
+      _audit: true 
     };
 
-    this.logStream.write(JSON.stringify(enriched) + "\n");
+    // Stringify and then scrub any sensitive data that might be in arguments or errors
+    const logString = JSON.stringify(enriched);
+    const scrubbedLog = scrubSensitiveData(logString);
+
+    // Emit to stderr (immutable, captured by host/SIEM)
+    console.error(scrubbedLog);
   }
 
   logDataAccess(
@@ -41,7 +57,7 @@ class AuditLogger {
   ): void {
     this.log({
       timestamp: new Date().toISOString(),
-      user: userInfo().username,
+      user: "system",
       tool,
       resource: `${resourceType}/${resourceName}`,
       namespace,

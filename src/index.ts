@@ -47,6 +47,10 @@ import { ToolRegistry } from "./tool-registry.js";
 import { createRequire } from "module";
 import { initializeTelemetry, shutdownTelemetry } from "./telemetry.js";
 import { startSSEServer } from "./sse-transport.js";
+import { scrubSensitiveData } from "./utils/secret-scrubber.js";
+import { auditLogger } from "./audit-logger.js";
+import { sanitizeInputArgs } from "./utils/input-sanitizer.js";
+import { validateNamespace, validateResourceName } from "./validators.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
@@ -414,7 +418,8 @@ class K8sMcpServer {
       const startTime = Date.now();
       this.requestCount++;
 
-      const { name, arguments: args } = request.params;
+      const name = request.params.name;
+      let args = request.params.arguments;
       const handler = this.toolRegistry.getHandler(name);
 
       if (!handler) {
@@ -460,6 +465,29 @@ class K8sMcpServer {
         throw new McpError(ErrorCode.InternalError, error);
       }
 
+      // Apply global input sanitization to prevent prompt-injection attacks
+      args = sanitizeInputArgs(name, args);
+
+      // Enforce strict namespace and resource name validation globally
+      if (args && typeof args === 'object') {
+        if ('namespace' in args && typeof args.namespace === 'string') {
+          try {
+            validateNamespace(args.namespace);
+          } catch (error) {
+            this.updateToolMetrics(name, startTime, false, (error as Error).message);
+            throw error;
+          }
+        }
+        if ('name' in args && typeof args.name === 'string') {
+          try {
+            validateResourceName(args.name);
+          } catch (error) {
+            this.updateToolMetrics(name, startTime, false, (error as Error).message);
+            throw error;
+          }
+        }
+      }
+
       // Validate arguments
       const tool = this.toolRegistry.getTool(name);
       if (tool && tool.inputSchema) {
@@ -477,8 +505,19 @@ class K8sMcpServer {
         if (cached !== undefined) {
           const responseTime = Date.now() - startTime;
           this.updateToolMetrics(name, startTime, true);
+          
+          auditLogger.log({
+            timestamp: new Date().toISOString(),
+            user: "system", // Would be populated via context in future MCP auth specs
+            tool: name,
+            action: "execute",
+            success: true,
+            args: args,
+          });
+
+          const cachedText = typeof cached === "string" ? cached : JSON.stringify(cached, null, 2);
           return {
-            content: [{ type: "text", text: typeof cached === "string" ? cached : JSON.stringify(cached, null, 2) }],
+            content: [{ type: "text", text: scrubSensitiveData(cachedText) }],
             _meta: { executionTime: responseTime, toolName: name, cached: true },
           };
         }
@@ -504,11 +543,22 @@ class K8sMcpServer {
           this.cacheManager.set(cacheKey, result);
         }
 
+        const resultText = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+
+        auditLogger.log({
+          timestamp: new Date().toISOString(),
+          user: "system",
+          tool: name,
+          action: "execute",
+          success: true,
+          args: args,
+        });
+
         return {
           content: [
             {
               type: "text",
-              text: typeof result === "string" ? result : JSON.stringify(result, null, 2),
+              text: scrubSensitiveData(resultText),
             },
           ],
           _meta: {
@@ -521,10 +571,20 @@ class K8sMcpServer {
         const context: ErrorContext = { operation: name, resource: argsAny?.name, namespace: argsAny?.namespace };
         const classifiedError = classifyError(error, context);
 
-        this.lastError = classifiedError.message;
+        this.lastError = scrubSensitiveData(classifiedError.message);
         this.errorCount++;
         this.trackError();
-        this.updateToolMetrics(name, startTime, false, classifiedError.message);
+        this.updateToolMetrics(name, startTime, false, this.lastError);
+
+        auditLogger.log({
+          timestamp: new Date().toISOString(),
+          user: "system",
+          tool: name,
+          action: "execute",
+          success: false,
+          args: args,
+          error: this.lastError
+        });
 
         // Check sliding window error rate for circuit breaker
         if (this.getRecentErrorCount() >= this.config.maxErrorsPerMinute) {
@@ -533,18 +593,18 @@ class K8sMcpServer {
 
         // Create detailed error response
         const errorResponse = {
-          error: classifiedError.message,
+          error: this.lastError,
           type: classifiedError.type,
           suggestions: classifiedError.suggestions,
           operation: name,
           ...(classifiedError.context.resource && { resource: classifiedError.context.resource }),
           ...(classifiedError.context.namespace && { namespace: classifiedError.context.namespace }),
-          ...(classifiedError.details && { details: classifiedError.details }),
+          ...(classifiedError.details && { details: scrubSensitiveData(String(classifiedError.details)) }),
         };
 
         throw new McpError(
           ErrorCode.InternalError,
-          JSON.stringify(errorResponse, null, 2)
+          scrubSensitiveData(JSON.stringify(errorResponse, null, 2))
         );
       }
     });

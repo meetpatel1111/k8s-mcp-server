@@ -264,11 +264,23 @@ export function validateYamlManifest(manifest: string): { valid: boolean; error?
     return { valid: false, error: "Manifest must be a non-empty string" };
   }
 
+  // Enforce maximum manifest payload size (1MB limit to prevent memory exhaustion)
+  const MAX_MANIFEST_SIZE = 1024 * 1024;
+  if (manifest.length > MAX_MANIFEST_SIZE) {
+    return { valid: false, error: `Manifest exceeds maximum allowed size of 1MB (current: ${(manifest.length / 1024).toFixed(2)}KB)` };
+  }
+
   try {
     const documents = yaml.loadAll(manifest) as any[];
     
     if (!documents || documents.length === 0) {
       return { valid: false, error: "No valid YAML documents found" };
+    }
+
+    // Enforce maximum number of documents per apply
+    const MAX_DOCUMENTS = 50;
+    if (documents.length > MAX_DOCUMENTS) {
+      return { valid: false, error: `Manifest contains too many documents (${documents.length}). Maximum allowed is ${MAX_DOCUMENTS}.` };
     }
 
     for (let i = 0; i < documents.length; i++) {
@@ -299,6 +311,15 @@ export function validateYamlManifest(manifest: string): { valid: boolean; error?
         validateResourceName(doc.metadata.name, doc.kind);
       } catch (err: any) {
         return { valid: false, error: `Document ${i + 1} invalid resource name: ${err.message}` };
+      }
+
+      // Validate replicas if present
+      if (doc.spec && typeof doc.spec.replicas !== "undefined") {
+        try {
+          validateReplicas(doc.spec.replicas);
+        } catch (err: any) {
+          return { valid: false, error: `Document ${i + 1} invalid replicas: ${err.message}` };
+        }
       }
     }
 
