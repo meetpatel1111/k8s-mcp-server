@@ -1,7 +1,7 @@
 # MCP Kubernetes Server Performance & Advanced Features Comparison
 
 **Comparison Date:** April 30, 2026  
-**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.16.0
+**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.17.0
 
 **Repository Links:**
 - [k8s-mcp-server](https://github.com/meetpatel1111/k8s-mcp-server) - meetpatel1111
@@ -48,7 +48,7 @@
 
 ### Performance Reality
 
-| Metric                             | mcp-server-kubernetes | k8s-mcp-server v0.16.0            | Why                                                   |
+| Metric                             | mcp-server-kubernetes | k8s-mcp-server v0.17.0            | Why                                                   |
 | ------------------------------------| -----------------------| -----------------------------------| -------------------------------------------------------|
 | **Cold Start**                     | 50-100ms              | 50-150ms (Bun) / 200-500ms (Node) | Both support Bun, k8s-mcp-server has more features    |
 | **Request Latency (Read/Write)**   | 80-150ms              | 8-40ms                            | Process spawn vs direct API call + connection pooling |
@@ -62,7 +62,7 @@
 
 ### Feature Completeness
 
-| Category | mcp-server-kubernetes | k8s-mcp-server v0.16.0 |
+| Category | mcp-server-kubernetes | k8s-mcp-server v0.17.0 |
 |----------|---------------------|------------------------|
 | **Tools** | 25 basic tools | 262+ comprehensive tools |
 | **Helm** | 3 operations | 40+ operations (full CLI) |

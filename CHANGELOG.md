@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-04-30
+
+### Added
+- **Enterprise-Grade Security Hardening** (SlowMist & OWASP Compliance)
+  - **Bearer Token Authentication**: Mandatory auth for SSE transport layer.
+  - **Deep Input Sanitization**: Automated deep-traversal of tool arguments to prevent shell injection.
+  - **Immutable Audit Logging**: JSON-structured telemetry emitted to `stderr` by default for SIEM integration.
+  - **Global Output Scrubbing**: Centralized redaction of credentials and PII from all tool results and errors.
+  - **DoS Protection**: Enforced 1MB payload limits and 50-document constraints for YAML processing.
+  - **Security Script**: Added `npm run start:secure` with Node.js experimental permission sandboxing.
+
+### Changed
+- **Secret Access Security**: Enforced mandatory `scrub: true` flag for reading or exporting Kubernetes Secrets.
+- **Audit Implementation**: Transitioned from file-based to process-stream audit logging for enhanced tamper-resistance.
+
 ## [0.16.0] - 2026-04-27
 
 ### Added
