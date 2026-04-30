@@ -17,7 +17,23 @@ const EXEMPT_ARGS = new Set([
   "script",
   "jsonpath",
   "patch",
-  "body"
+  "body",
+  "manifest",
+  "namespace",
+  "annotations",
+  "labels",
+  "data",
+  "value",
+  "values",
+  "path",
+  "set",
+  "setString",
+  "setJson",
+  "setLiteral",
+  "setFile",
+  "args",
+  "image",
+  "host"
 ]);
 
 /**

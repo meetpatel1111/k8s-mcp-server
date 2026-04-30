@@ -194,6 +194,16 @@ class K8sMcpServer {
     "k8s_delete_rolebinding",
     "k8s_delete_clusterrolebinding",
     "k8s_delete_hpa",
+    "k8s_delete_networkpolicy",
+    "k8s_delete_resourcequota",
+    "k8s_delete_limitrange",
+    "k8s_delete_storageclass",
+    "k8s_delete_pv",
+    "k8s_delete_pdb",
+    "k8s_delete_runtimeclass",
+    "k8s_delete_lease",
+    "k8s_delete_csr",
+    "k8s_delete_ingressclass",
     // Node operations that affect scheduling
     "k8s_drain_node",
     "k8s_cordon_node",
@@ -235,6 +245,8 @@ class K8sMcpServer {
     "k8s_create_clusterrolebinding",
     "k8s_create_resource_quota",
     "k8s_create_limit_range",
+    "k8s_create_namespace",
+    "k8s_create_priorityclass",
     "k8s_expose",
     "k8s_run",
     "k8s_quick_deploy",
@@ -419,116 +431,94 @@ class K8sMcpServer {
       this.requestCount++;
 
       const name = request.params.name;
-      let args = request.params.arguments;
-      const handler = this.toolRegistry.getHandler(name);
+      const args = request.params.arguments;
 
-      if (!handler) {
-        const error = `Unknown tool: ${name}`;
-        this.updateToolMetrics(name, startTime, false, error);
-        throw new McpError(ErrorCode.MethodNotFound, error);
-      }
-
-      // Check circuit breaker - block requests when error rate is too high
-      if (this.circuitBreakerOpen) {
-        const error = `Circuit breaker is OPEN due to high error rate. Requests temporarily blocked. ` +
-          `Auto-resets in up to ${this.config.circuitBreakerTimeout / 1000}s. Wait and retry.`;
-        this.updateToolMetrics(name, startTime, false, error);
-        throw new McpError(ErrorCode.InternalError, error);
-      }
-
-      // Check infrastructure protection mode for destructive tools
-      if (this.infraProtectionEnabled && this.DESTRUCTIVE_TOOLS.has(name)) {
-        const error = `Tool '${name}' is blocked by Infrastructure Protection Mode. ` +
-          `This is a destructive operation that could impact cluster stability. ` +
-          `To enable destructive tools, use 'k8s_toggle_protection_mode' or set INFRA_PROTECTION_MODE=false`;
-        this.updateToolMetrics(name, startTime, false, error);
-        throw new McpError(ErrorCode.InternalError, error);
-      }
-
-      // Check strict protection mode - blocks ALL non-read-only operations
-      if (this.strictProtectionEnabled && !this.READ_ONLY_TOOLS.has(name)) {
-        const error = `Tool '${name}' is blocked by Strict Protection Mode. ` +
-          `Only read-only/list operations are allowed. ` +
-          `This tool would modify cluster state. ` +
-          `To disable strict protection, use 'k8s_toggle_strict_protection_mode' or set STRICT_PROTECTION_MODE=false`;
-        this.updateToolMetrics(name, startTime, false, error);
-        throw new McpError(ErrorCode.InternalError, error);
-      }
-
-      // Check no delete protection mode - blocks only deletion operations
-      if (this.noDeleteProtectionEnabled && this.DELETION_TOOLS.has(name)) {
-        const error = `Tool '${name}' is blocked by No Delete Protection Mode. ` +
-          `Delete operations are not allowed. ` +
-          `You can still update, scale, and modify resources. ` +
-          `To disable no-delete protection, use 'k8s_toggle_no_delete_mode' or set NO_DELETE_PROTECTION_MODE=false`;
-        this.updateToolMetrics(name, startTime, false, error);
-        throw new McpError(ErrorCode.InternalError, error);
-      }
-
-      // Apply global input sanitization to prevent prompt-injection attacks
-      args = sanitizeInputArgs(name, args);
-
-      // Enforce strict namespace and resource name validation globally
-      if (args && typeof args === 'object') {
-        if ('namespace' in args && typeof args.namespace === 'string') {
-          try {
-            validateNamespace(args.namespace);
-          } catch (error) {
-            this.updateToolMetrics(name, startTime, false, (error as Error).message);
-            throw error;
-          }
-        }
-        if ('name' in args && typeof args.name === 'string') {
-          try {
-            validateResourceName(args.name);
-          } catch (error) {
-            this.updateToolMetrics(name, startTime, false, (error as Error).message);
-            throw error;
-          }
-        }
-      }
-
-      // Validate arguments
-      const tool = this.toolRegistry.getTool(name);
-      if (tool && tool.inputSchema) {
-        const validationError = this.validateArguments(tool.inputSchema, args);
-        if (validationError) {
-          this.updateToolMetrics(name, startTime, false, validationError);
-          throw new McpError(ErrorCode.InvalidParams, validationError);
-        }
-      }
-
-      // Check cache for read-only operations
-      if (this.READ_ONLY_TOOLS.has(name)) {
-        const cacheKey = `${name}:${JSON.stringify(args || {})}`;
-        const cached = this.cacheManager.get(cacheKey);
-        if (cached !== undefined) {
-          const responseTime = Date.now() - startTime;
-          this.updateToolMetrics(name, startTime, true);
-          
-          auditLogger.log({
-            timestamp: new Date().toISOString(),
-            user: "system", // Would be populated via context in future MCP auth specs
-            tool: name,
-            action: "execute",
-            success: true,
-            args: args,
-          });
-
-          const cachedText = typeof cached === "string" ? cached : JSON.stringify(cached, null, 2);
-          return {
-            content: [{ type: "text", text: scrubSensitiveData(cachedText) }],
-            _meta: { executionTime: responseTime, toolName: name, cached: true },
-          };
-        }
-      }
-
-      // Get per-tool timeout
-      const timeout = this.TOOL_TIMEOUTS[name] || this.config.defaultToolTimeout;
+      // Log tool call and protection state for debugging (visible in MCP logs)
+      const isDestructive = this.DESTRUCTIVE_TOOLS.has(name);
+      const isReadOnly = this.READ_ONLY_TOOLS.has(name);
+      const isDeletion = this.DELETION_TOOLS.has(name);
+      console.error(`[MCP Tool Call] ${name} | Infra: ${this.infraProtectionEnabled} (Destructive: ${isDestructive}) | Strict: ${this.strictProtectionEnabled} (ReadOnly: ${isReadOnly}) | NoDelete: ${this.noDeleteProtectionEnabled} (Deletion: ${isDeletion})`);
 
       try {
+        // 1. Mandatory Protection Checks - ALWAYS RUN FIRST
+        if (this.infraProtectionEnabled && isDestructive) {
+          throw new Error(`Tool '${name}' is blocked by Infrastructure Protection Mode. ` +
+            `This is a destructive operation that could impact cluster stability.`);
+        }
+
+        if (this.strictProtectionEnabled && !isReadOnly) {
+          throw new Error(`Tool '${name}' is blocked by Strict Protection Mode. ` +
+            `Only read-only/list operations are allowed.`);
+        }
+
+        if (this.noDeleteProtectionEnabled && isDeletion) {
+          throw new Error(`Tool '${name}' is blocked by No Delete Protection Mode. ` +
+            `Deletion of resources is currently restricted.`);
+        }
+
+        const handler = this.toolRegistry.getHandler(name);
+        if (!handler) {
+          throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+        }
+
+        // Check circuit breaker - block requests when error rate is too high
+        if (this.circuitBreakerOpen) {
+          throw new Error(`Circuit breaker is OPEN due to high error rate. Requests temporarily blocked. ` +
+            `Auto-resets in up to ${this.config.circuitBreakerTimeout / 1000}s. Wait and retry.`);
+        }
+
+        // Apply global input sanitization to prevent prompt-injection attacks
+        const sanitizedArgs = sanitizeInputArgs(name, args);
+
+        // Enforce strict namespace and resource name validation globally
+        if (sanitizedArgs && typeof sanitizedArgs === 'object') {
+          if ('namespace' in (sanitizedArgs as any) && typeof (sanitizedArgs as any).namespace === 'string') {
+            validateNamespace((sanitizedArgs as any).namespace);
+          }
+          if ('name' in (sanitizedArgs as any) && typeof (sanitizedArgs as any).name === 'string') {
+            validateResourceName((sanitizedArgs as any).name);
+          }
+        }
+
+        // Validate arguments
+        const tool = this.toolRegistry.getTool(name);
+        if (tool && tool.inputSchema) {
+          const validationError = this.validateArguments(tool.inputSchema, sanitizedArgs);
+          if (validationError) {
+            throw new McpError(ErrorCode.InvalidParams, validationError);
+          }
+        }
+
+        // Check cache for read-only operations
+        if (this.READ_ONLY_TOOLS.has(name)) {
+          const cacheKey = `${name}:${JSON.stringify(sanitizedArgs || {})}`;
+          const cached = this.cacheManager.get(cacheKey);
+          if (cached !== undefined) {
+            const responseTime = Date.now() - startTime;
+            this.updateToolMetrics(name, startTime, true);
+            
+            auditLogger.log({
+              timestamp: new Date().toISOString(),
+              user: "system",
+              tool: name,
+              action: "execute",
+              success: true,
+              args: sanitizedArgs,
+            });
+
+            const cachedText = typeof cached === "string" ? cached : JSON.stringify(cached, null, 2);
+            return {
+              content: [{ type: "text", text: scrubSensitiveData(cachedText) }],
+              _meta: { executionTime: responseTime, toolName: name, cached: true },
+            };
+          }
+        }
+
+        // Get per-tool timeout
+        const timeout = this.TOOL_TIMEOUTS[name] || this.config.defaultToolTimeout;
+
         const result = await Promise.race([
-          handler(args),
+          handler(sanitizedArgs),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error(`Tool execution timeout after ${timeout / 1000}s`)), timeout)
           )
@@ -539,7 +529,7 @@ class K8sMcpServer {
 
         // Cache read-only results
         if (this.READ_ONLY_TOOLS.has(name)) {
-          const cacheKey = `${name}:${JSON.stringify(args || {})}`;
+          const cacheKey = `${name}:${JSON.stringify(sanitizedArgs || {})}`;
           this.cacheManager.set(cacheKey, result);
         }
 
@@ -551,7 +541,7 @@ class K8sMcpServer {
           tool: name,
           action: "execute",
           success: true,
-          args: args,
+          args: sanitizedArgs,
         });
 
         return {
@@ -591,21 +581,28 @@ class K8sMcpServer {
           this.openCircuitBreaker();
         }
 
-        // Create detailed error response
-        const errorResponse = {
-          error: this.lastError,
-          type: classifiedError.type,
-          suggestions: classifiedError.suggestions,
-          operation: name,
-          ...(classifiedError.context.resource && { resource: classifiedError.context.resource }),
-          ...(classifiedError.context.namespace && { namespace: classifiedError.context.namespace }),
-          ...(classifiedError.details && { details: scrubSensitiveData(String(classifiedError.details)) }),
-        };
+        // Return a structured error result instead of throwing a protocol error
+        // This ensures the client/LLM sees the content and suggestions
+        const errorText = `ERROR: ${this.lastError}\n` +
+          `Type: ${classifiedError.type}\n` +
+          (classifiedError.suggestions.length > 0 
+            ? `\nSUGGESTIONS:\n${classifiedError.suggestions.map(s => `* ${s}`).join("\n")}` 
+            : "");
 
-        throw new McpError(
-          ErrorCode.InternalError,
-          scrubSensitiveData(JSON.stringify(errorResponse, null, 2))
-        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: scrubSensitiveData(errorText),
+            },
+          ],
+          isError: true,
+          _meta: {
+            executionTime: Date.now() - startTime,
+            toolName: name,
+            errorType: classifiedError.type,
+          },
+        };
       }
     });
   }

@@ -30,9 +30,6 @@ const SENSITIVE_PATTERNS = [
   // GCP keys
   { pattern: /AIza[0-9A-Za-z_-]{35}/g, replacement: '[GCP_API_KEY_REDACTED]' },
 
-  // Azure keys
-  { pattern: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, replacement: '[AZURE_GUID_REDACTED]' },
-
   // GitHub tokens
   { pattern: /ghp_[a-zA-Z0-9]{36}/g, replacement: '[GITHUB_PAT_REDACTED]' },
   { pattern: /gho_[a-zA-Z0-9]{36}/g, replacement: '[GITHUB_OAUTH_REDACTED]' },
@@ -68,11 +65,6 @@ const SENSITIVE_PATTERNS = [
   // OAuth tokens
   { pattern: /(oauth_token|oauth_token_secret|oauth_consumer_key|oauth_consumer_secret|oauth_signature)\s*[:=]\s*["']?[^\s"'\n]+["']?/gi, replacement: '$1: [OAUTH_TOKEN_REDACTED]' },
 
-  // Generic high-entropy strings that look like tokens (hex)
-  { pattern: /\b[a-f0-9]{32,64}\b/gi, replacement: '[HEX_TOKEN_REDACTED]' },
-  // Generic high-entropy strings (mixed alphanumeric, likely tokens)
-  { pattern: /\b[a-zA-Z0-9]{40,64}\b/g, replacement: '[POTENTIAL_TOKEN_REDACTED]' },
-
   // Email addresses
   { pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, replacement: '[EMAIL_REDACTED]' },
 
@@ -84,15 +76,6 @@ const SENSITIVE_PATTERNS = [
 
   // Phone numbers (common formats)
   { pattern: /\b(?:\+?1[-.]?)?\(?[0-9]{3}\)?[-.]?[0-9]{3}[-.]?[0-9]{4}\b/g, replacement: '[PHONE_REDACTED]' },
-
-  // IP addresses (internal network exposure)
-  { pattern: /\b(?:10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|192\.168\.)\d{1,3}\.\d{1,3}\b/g, replacement: '[INTERNAL_IP_REDACTED]' },
-
-  // Full IPv4 addresses
-  { pattern: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g, replacement: '[IP_ADDRESS_REDACTED]' },
-
-  // Kubernetes secrets in data fields
-  { pattern: /(\w+\.key|tls\.crt|tls\.key|ca\.crt)\s*:\s*[a-zA-Z0-9+/=]{20,}/g, replacement: '$1: [K8S_SECRET_DATA_REDACTED]' },
 
   // Environment variable style secrets
   { pattern: /(export\s+)?(SECRET|TOKEN|PASSWORD|API_KEY|ACCESS_KEY|PRIVATE_KEY)\s*=\s*[^\s\n]+/gi, replacement: '$2=[ENV_SECRET_REDACTED]' },

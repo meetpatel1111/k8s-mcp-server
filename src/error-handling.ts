@@ -31,6 +31,7 @@ export type ErrorType =
   | "conflict" 
   | "server" 
   | "client" 
+  | "protection"
   | "unknown";
 
 // Error context for detailed reporting
@@ -81,6 +82,9 @@ export class K8sMcpError extends Error {
 
 // Error classifier
 export function classifyError(error: any, context: ErrorContext): K8sMcpError {
+  if (error instanceof K8sMcpError) {
+    return error;
+  }
   const errorMessage = String(error?.message || error || "Unknown error");
   const errorBody = error?.body || error?.response?.body;
 
@@ -102,6 +106,30 @@ export function classifyError(error: any, context: ErrorContext): K8sMcpError {
         "For cloud clusters, verify VPN/connection is active"
       ],
       { originalMessage: errorMessage, statusCode: error?.statusCode, body: errorBody }
+    );
+  }
+
+  // Protection Mode errors (blocked tools) - CHECK EARLY for high priority
+  if (errorMessage.includes("Protection Mode") || errorMessage.includes("blocked by")) {
+    const isStrict = errorMessage.includes("Strict");
+    const isNoDelete = errorMessage.includes("No Delete");
+    const toggleTool = isStrict 
+      ? "k8s_toggle_strict_protection_mode" 
+      : isNoDelete 
+        ? "k8s_toggle_no_delete_mode" 
+        : "k8s_toggle_protection_mode";
+
+    return new K8sMcpError(
+      "protection",
+      errorMessage,
+      context,
+      error,
+      [
+        `Use '${toggleTool}(enabled=false, confirm=true)' to disable this specific protection mode`,
+        "Would you like to disable protection mode to proceed with this action?",
+        "Check your environment variables (e.g. INFRA_PROTECTION_MODE=false) to disable this permanently"
+      ],
+      { originalMessage: errorMessage }
     );
   }
 
