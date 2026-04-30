@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="300" alt="k8s-mcp-server logo">
+</p>
+
 # k8s-mcp-server
 
 [![npm version](https://badge.fury.io/js/k8s-mcp-server.svg)](https://www.npmjs.com/package/k8s-mcp-server)
