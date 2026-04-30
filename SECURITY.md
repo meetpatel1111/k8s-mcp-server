@@ -248,8 +248,8 @@ Controls all three protection modes simultaneously for quick switching between f
 - **Cryptographic:** PEM private/public keys, X.509 certificates, hex tokens (32-64 chars)
 - **Authentication:** Bearer tokens, Basic Auth, OAuth tokens, database connection strings
 - **PII:** Credit cards, SSN (XXX-XX-XXXX), email addresses, phone numbers
-- **Network:** Internal IPs (10.x, 172.16-31.x, 192.168.x), all IPv4 addresses
 - **Kubernetes:** tls.crt, tls.key, ca.crt data fields, Docker registry auth
+- **Infrastructure:** Public IP addresses and resource identifiers are preserved to maintain cluster visibility; focused redaction is applied only to actual secrets.
 
 **Example usage:**
 ```bash

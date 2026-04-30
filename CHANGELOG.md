@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-04-30
+
+### Fixed
+- **Sanitization Optimization**: Refined `shell-sanitizer` and `input-sanitizer` to support Kubernetes regex paths (`(/|$)`) and complex annotations.
+- **Redaction Precision**: Pruned overly aggressive scrubbing patterns that were redacting LoadBalancer IPs and resource GUIDs.
+- **Data Integrity**: Resolved regression where Ingress rewrite-targets and paths were being corrupted by the security layer.
+
+### Added
+- **Expanded Exemption Whitelist**: Added `path`, `host`, `image`, and Helm-specific keys to the sanitization bypass list.
+
 ## [0.17.0] - 2026-04-30
 
 ### Added
