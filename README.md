@@ -1,14 +1,20 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-mcp-server logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.19.1 logo">
 </p>
 
-# k8s-mcp-server
+# k8s-helm-mcp
 
-[![npm version](https://badge.fury.io/js/k8s-mcp-server.svg)](https://www.npmjs.com/package/k8s-mcp-server)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/k8s-mcp-server.svg)](https://nodejs.org/)
+[![npm version](https://badge.fury.io/js/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Node.js Version](https://img.shields.io/node/v/k8s-helm-mcp.svg)](https://nodejs.org/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.18.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.19.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+
+> [!TIP]
+> **Status:** This package works brilliantly with **Claude Code**! You can add it directly using `claude mcp add kubernetes npx k8s-helm-mcp`.
+
+> [!NOTE]
+> **SSE Feature:** The SSE transport feature is currently in development and should be considered experimental.
 
 ## Overview
 
@@ -115,12 +121,24 @@ Verify installation:
 helm version
 ```
 
-### Installation
+### Installation & Usage
+
+There are two ways to use the k8s-helm-mcp:
+
+#### Option 1: Instant Usage (via npx - Recommended)
+
+The easiest way to run the server is using `npx`. No cloning or manual building required.
+
+```bash
+npx k8s-helm-mcp
+```
+
+#### Option 2: Local Development
 
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/meetpatel1111/k8s-mcp-server.git
-cd k8s-mcp-server
+git clone https://github.com/meetpatel1111/k8s-helm-mcp.git
+cd k8s-helm-mcp
 ```
 
 2. **Install dependencies**:
@@ -131,6 +149,11 @@ npm install
 3. **Build the project**:
 ```bash
 npm run build
+```
+
+4. **Start the server**:
+```bash
+npm start
 ```
 
 ### Quick Start Examples
@@ -250,52 +273,46 @@ npm run build
 #### Option 1: Claude Desktop
 
 1. **Open Settings**: Press `Cmd + ,` (Mac) or `Ctrl + ,` (Windows/Linux)
-2. **Go to Developer → Edit Config**
-3. **Add this configuration** (update the path):
+2. **Go to Developer → Edit Config** (or manually open `%APPDATA%\Claude\claude_desktop_config.json`)
 
-**Mac/Linux (Node.js):**
+> [!TIP]
+> **Microsoft Store Users:** If you installed Claude via the Microsoft Store, the config file is located at:
+> `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\claude_desktop_config.json`
+> *(Note: The package folder name may vary, e.g., `Claude_pzs8sxrjxfjjc` or `AnthropicClaude_...`)*
+
+3. **Add this configuration**:
+
+**Using npx (Recommended - No path required):**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"]
+    }
+  }
+}
+```
+
+**Using Local Build (Mac/Linux Node.js):**
 ```json
 {
   "mcpServers": {
     "kubernetes": {
       "command": "node",
-      "args": ["/path/to/k8s-mcp-server/dist/index.js"]
+      "args": ["/path/to/k8s-helm-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-**Mac/Linux (Bun - Recommended for faster startup):**
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "bun",
-      "args": ["run", "/path/to/k8s-mcp-server/dist/index.js"]
-    }
-  }
-}
-```
-
-**Windows (Node.js):**
+**Using Local Build (Windows Node.js):**
 ```json
 {
   "mcpServers": {
     "kubernetes": {
       "command": "node",
-      "args": ["C:\\path\\to\\k8s-mcp-server\\dist\\index.js"]
-    }
-  }
-}
-```
-
-**Windows (Bun - Recommended for faster startup):**
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "bun",
-      "args": ["run", "C:\\path\\to\\k8s-mcp-server\\dist\\index.js"]
+      "args": ["C:\\path\\to\\k8s-helm-mcp\\dist\\index.js"]
     }
   }
 }
@@ -306,52 +323,15 @@ npm run build
 
 #### Option 2: VS Code
 
-**Mac/Linux (Node.js):**
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "node",
-      "args": ["/path/to/k8s-mcp-server/dist/index.js"],
-      "description": "Kubernetes cluster management"
-    }
-  }
-}
-```
+Add to your `mcpServers` config:
 
-**Mac/Linux (Bun - Recommended for faster startup):**
+**Using npx:**
 ```json
 {
   "mcpServers": {
     "kubernetes": {
-      "command": "bun",
-      "args": ["run", "/path/to/k8s-mcp-server/dist/index.js"],
-      "description": "Kubernetes cluster management"
-    }
-  }
-}
-```
-
-**Windows (Node.js):**
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "node",
-      "args": ["C:\\path\\to\\k8s-mcp-server\\dist\\index.js"],
-      "description": "Kubernetes cluster management"
-    }
-  }
-}
-```
-
-**Windows (Bun - Recommended for faster startup):**
-```json
-{
-  "mcpServers": {
-    "kubernetes": {
-      "command": "bun",
-      "args": ["run", "C:\\path\\to\\k8s-mcp-server\\dist\\index.js"],
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"],
       "description": "Kubernetes cluster management"
     }
   }
@@ -361,24 +341,18 @@ npm run build
 #### Option 3: Cursor
 
 Add server with command:
-**Mac/Linux (Node.js):** `node /path/to/k8s-mcp-server/dist/index.js`
-**Mac/Linux (Bun - Recommended):** `bun run /path/to/k8s-mcp-server/dist/index.js`
-**Windows (Node.js):** `node C:\path\to\k8s-mcp-server\dist\index.js`
-**Windows (Bun - Recommended):** `bun run C:\path\to\k8s-mcp-server\dist\index.js`
+`npx -y k8s-helm-mcp`
 
 #### Option 4: Claude Code
 
-**Node.js:**
 ```bash
-claude mcp add kubernetes node /path/to/k8s-mcp-server/dist/index.js
-```
-
-**Bun (Recommended for faster startup):**
-```bash
-claude mcp add kubernetes bun run /path/to/k8s-mcp-server/dist/index.js
+claude mcp add kubernetes npx k8s-helm-mcp
 ```
 
 #### Option 5: Web Deployment (SSE Transport)
+
+> [!WARNING]
+> The SSE transport feature is currently in development and may be unstable. Stdio transport (default) is recommended for production use.
 
 For web-based clients, use the SSE transport:
 
@@ -462,11 +436,15 @@ kubectl top pods
 
 ### Manual Claude Desktop Config File Paths
 
-Add to `claude_desktop_config.json`:
+To integrate this server, add the configuration below to your `claude_desktop_config.json`. 
 
-**Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-**Linux**: `~/.config/Claude/claude_desktop_config.json`
+> [!TIP]
+> The easiest way to find this file is to open **Claude Desktop** → **Settings** → **Developer** → **Edit Config**. This works regardless of your installation path.
+
+**Default Paths:**
+- **Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -522,11 +500,7 @@ This MCP server is designed for seamless integration with Claude Desktop. Once c
 1. Installed dependencies: `npm install`
 2. Built the project: `npm run build`
 
-Add to your Claude Desktop config:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+Add the server to your config file (see the [Manual Paths](#manual-claude-desktop-config-file-paths) section above if you cannot find it):
 
 Open Claude Desktop → Settings → Developer → Edit Config, then add:
 
@@ -535,13 +509,13 @@ Open Claude Desktop → Settings → Developer → Edit Config, then add:
   "mcpServers": {
     "kubernetes": {
       "command": "node",
-      "args": ["PATH/TO/k8s-mcp-server/dist/index.js"]
+      "args": ["PATH/TO/k8s-helm-mcp/dist/index.js"]
     }
   }
 }
 ```
 
-**Replace `PATH/TO/k8s-mcp-server` with your actual installation path.**
+**Replace `PATH/TO/k8s-helm-mcp` with your actual installation path.**
 
 ### Common Workflows
 

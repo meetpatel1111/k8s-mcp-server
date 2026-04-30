@@ -19,12 +19,12 @@ export function initializeTelemetry(): void {
 
   // Get OTLP endpoint from environment variable or use default
   const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4317";
-  const serviceName = process.env.OTEL_SERVICE_NAME || "k8s-mcp-server";
+  const serviceName = process.env.OTEL_SERVICE_NAME || "k8s-helm-mcp";
 
   const resource = Resource.default().merge(
     new Resource({
       [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
-      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || "0.12.0",
+      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || "0.19.0",
     })
   );
 
@@ -63,7 +63,7 @@ export async function shutdownTelemetry(): Promise<void> {
  */
 export function withTelemetry(toolName: string, handler: Function): Function {
   return async (...args: any[]) => {
-    const tracer = trace.getTracer("k8s-mcp-server");
+    const tracer = trace.getTracer("k8s-helm-mcp");
     const span = tracer.startSpan(toolName);
 
     try {
@@ -96,5 +96,5 @@ export function withTelemetry(toolName: string, handler: Function): Function {
  * Get the current tracer
  */
 export function getTracer() {
-  return trace.getTracer("k8s-mcp-server");
+  return trace.getTracer("k8s-helm-mcp");
 }

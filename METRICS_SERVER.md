@@ -1,6 +1,6 @@
 # Metrics Server Installation Guide
 
-The k8s-mcp-server includes several tools that require metrics-server to be installed on your Kubernetes cluster:
+The k8s-helm-mcp includes several tools that require metrics-server to be installed on your Kubernetes cluster:
 
 - `k8s_top_node` - Display resource usage (CPU/Memory) for nodes
 - `k8s_top_pod` - Display resource usage (CPU/Memory) for pods

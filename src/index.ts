@@ -352,7 +352,7 @@ class K8sMcpServer {
     
     this.server = new Server(
       {
-        name: "k8s-mcp-server",
+        name: "k8s-helm-mcp",
         version: packageJson.version,
       },
       {
@@ -634,7 +634,7 @@ class K8sMcpServer {
           ? Array.from(this.toolRegistry.getAllTools().keys()).filter(name => !this.READ_ONLY_TOOLS.has(name)).length
           : 0;
         const info: ServerInfo = {
-          name: "k8s-mcp-server",
+          name: "k8s-helm-mcp",
           version: packageJson.version,
           startTime: this.startTime,
           uptime,

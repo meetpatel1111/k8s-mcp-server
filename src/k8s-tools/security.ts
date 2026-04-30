@@ -1730,7 +1730,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
                 {
                   type: "Approved",
                   status: "True",
-                  reason: "Approved via k8s-mcp-server",
+                  reason: "Approved via k8s-helm-mcp",
                   message: "This CSR was approved by the MCP server",
                   lastUpdateTime: new Date().toISOString(),
                 },
@@ -1815,7 +1815,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
                 {
                   type: "Denied",
                   status: "True",
-                  reason: "Denied via k8s-mcp-server",
+                  reason: "Denied via k8s-helm-mcp",
                   message: "This CSR was denied by the MCP server",
                   lastUpdateTime: new Date().toISOString(),
                 },

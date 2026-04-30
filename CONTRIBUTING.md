@@ -1,6 +1,6 @@
-# Contributing to k8s-mcp-server
+# Contributing to k8s-helm-mcp
 
-Thank you for your interest in contributing to the k8s-mcp-server! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to the k8s-helm-mcp! This document provides guidelines and instructions for contributing to the project.
 
 ## Development Setup
 
@@ -16,8 +16,8 @@ Thank you for your interest in contributing to the k8s-mcp-server! This document
 
 1. **Fork and clone the repository:**
 ```bash
-git clone https://github.com/YOUR_USERNAME/k8s-mcp-server.git
-cd k8s-mcp-server
+git clone https://github.com/YOUR_USERNAME/k8s-helm-mcp.git
+cd k8s-helm-mcp
 ```
 
 2. **Install dependencies:**
@@ -260,4 +260,4 @@ Releases are managed by maintainers:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the Apache License 2.0.

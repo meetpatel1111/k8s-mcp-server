@@ -1,6 +1,6 @@
 # Cloud Provider Limitations
 
-This document describes known limitations and workarounds when using the k8s-mcp-server with different cloud providers.
+This document describes known limitations and workarounds when using the k8s-helm-mcp with different cloud providers.
 
 ## Azure Kubernetes Service (AKS)
 

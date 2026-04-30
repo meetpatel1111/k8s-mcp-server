@@ -184,7 +184,7 @@ export async function startSSEServer(port: number = 3000): Promise<void> {
       // Create a new Server instance for this connection
       const server = new Server(
         {
-          name: "k8s-mcp-server",
+          name: "k8s-helm-mcp",
           version: packageJson.version,
         },
         {

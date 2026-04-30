@@ -1,6 +1,6 @@
 # Private Registry Deployment Guide
 
-This guide explains how to deploy applications using private container image registries with the k8s-mcp-server.
+This guide explains how to deploy applications using private container image registries with the k8s-helm-mcp.
 
 ## Overview
 

@@ -1,10 +1,10 @@
 # Security and Data Protection Guide
 
-This document explains the security architecture, data protection mechanisms, and safety features of the k8s-mcp-server.
+This document explains the security architecture, data protection mechanisms, and safety features of the k8s-helm-mcp.
 
 ## Overview
 
-The k8s-mcp-server is designed with security as a primary concern. It acts as a secure proxy between Claude and your Kubernetes cluster, ensuring that sensitive credentials and configuration data are never exposed to the AI.
+The k8s-helm-mcp is designed with security as a primary concern. It acts as a secure proxy between Claude and your Kubernetes cluster, ensuring that sensitive credentials and configuration data are never exposed to the AI.
 
 ## Security Architecture
 
@@ -12,7 +12,7 @@ The k8s-mcp-server is designed with security as a primary concern. It acts as a 
 
 ```
 ┌─────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   Claude    │         │  k8s-mcp-server  │         │ Kubernetes API  │
+│   Claude    │         │  k8s-helm-mcp  │         │ Kubernetes API  │
 │  (AI Client)│────────▶│  (Local Proxy)   │────────▶│  (Cluster)      │
 └─────────────┘         └──────────────────┘         └─────────────────┘
                             │
@@ -516,7 +516,7 @@ If you discover a security vulnerability, please report it responsibly:
 
 ## Summary
 
-The k8s-mcp-server is designed with security as a foundational principle:
+The k8s-helm-mcp is designed with security as a foundational principle:
 
 - **Credentials never exposed to Claude** - handled locally by the server
 - **Protection modes prevent accidents** - enabled by default
@@ -525,4 +525,4 @@ The k8s-mcp-server is designed with security as a foundational principle:
 - **RBAC enforcement** - respects Kubernetes access controls
 - **Memory-only credential storage** - no persistence of sensitive data
 
-By following the security best practices outlined in this guide, you can ensure safe and secure operation of the k8s-mcp-server in your environment.
+By following the security best practices outlined in this guide, you can ensure safe and secure operation of the k8s-helm-mcp in your environment.

@@ -1,29 +1,29 @@
 # MCP Kubernetes Server Performance & Advanced Features Comparison
 
-**Comparison Date:** April 30, 2026  
-**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-mcp-server v0.17.0
+**Comparison Date:** May 1, 2026  
+**Versions:** mcp-server-kubernetes v3.5.0 vs k8s-helm-mcp v0.19.0
 
 **Repository Links:**
-- [k8s-mcp-server](https://github.com/meetpatel1111/k8s-mcp-server) - meetpatel1111
+- [k8s-helm-mcp](https://github.com/meetpatel1111/k8s-helm-mcp) - meetpatel1111
 - [mcp-server-kubernetes](https://github.com/Flux159/mcp-server-kubernetes) - Flux159
 
 ---
 
 ## Executive Summary
 
-| Metric                                  | mcp-server-kubernetes-main | k8s-mcp-server-main    | Winner                |
+| Metric                                  | mcp-server-kubernetes-main | k8s-helm-mcp-main    | Winner                |
 | -----------------------------------------| ----------------------------| ------------------------| -----------------------|
-| **Tool Count**                          | ~25 tools                  | ~262+ tools            | k8s-mcp-server        |
+| **Tool Count**                          | ~25 tools                  | ~262+ tools            | k8s-helm-mcp        |
 | **Cold Start**                          | Fast (Bun)                 | Fast (Bun/Node)        | Tie                   |
-| **Request Latency (Read/Write)**        | Higher (kubectl exec)      | Lower (direct API)     | k8s-mcp-server        |
+| **Request Latency (Read/Write)**        | Higher (kubectl exec)      | Lower (direct API)     | k8s-helm-mcp        |
 | **Request Latency (Exec/Port-Forward)** | Executes directly          | Executes directly      | Tie                   |
-| **Caching**                             | None                       | Response caching       | k8s-mcp-server        |
-| **Advanced Features**                   | Basic                      | Comprehensive          | k8s-mcp-server        |
+| **Caching**                             | None                       | Response caching       | k8s-helm-mcp        |
+| **Advanced Features**                   | Basic                      | Comprehensive          | k8s-helm-mcp        |
 | **Observability**                       | OpenTelemetry              | OpenTelemetry          | Tie                   |
 | **Bundle Size**                         | Smaller                    | Larger                 | mcp-server-kubernetes |
-| **Production Ready**                    | Basic                      | Advanced               | k8s-mcp-server        |
+| **Production Ready**                    | Basic                      | Advanced               | k8s-helm-mcp        |
 
-**Overall Winner for High Performance + Advanced Features:** `k8s-mcp-server-main` (for read/write operations)
+**Overall Winner for High Performance + Advanced Features:** `k8s-helm-mcp-main` (for read/write operations)
 
 ---
 
@@ -38,7 +38,7 @@
 - Simpler, more transparent implementation
 - kubectl is the primary execution engine for everything
 
-**k8s-mcp-server-main:** Hybrid approach (API client + kubectl command generation + direct exec)
+**k8s-helm-mcp-main:** Hybrid approach (API client + kubectl command generation + direct exec)
 - Uses `@kubernetes/client-node` for most read/write operations (direct REST API calls)
 - Uses kubectl only for installation check and kubeconfig loading (startup only)
 - Uses `execFileSync` for direct command execution in pods (k8s_exec_pod with mode="direct")
@@ -48,21 +48,21 @@
 
 ### Performance Reality
 
-| Metric                             | mcp-server-kubernetes | k8s-mcp-server v0.17.0            | Why                                                   |
+| Metric                             | mcp-server-kubernetes | k8s-helm-mcp v0.18.0            | Why                                                   |
 | ------------------------------------| -----------------------| -----------------------------------| -------------------------------------------------------|
-| **Cold Start**                     | 50-100ms              | 50-150ms (Bun) / 200-500ms (Node) | Both support Bun, k8s-mcp-server has more features    |
+| **Cold Start**                     | 50-100ms              | 50-150ms (Bun) / 200-500ms (Node) | Both support Bun, k8s-helm-mcp has more features    |
 | **Request Latency (Read/Write)**   | 80-150ms              | 8-40ms                            | Process spawn vs direct API call + connection pooling |
 | **Request Latency (Exec)**         | 80-150ms              | 80-150ms                          | Both use execFileSync for direct execution            |
-| **Request Latency (Port-Forward)** | 80-150ms              | N/A (returns command)             | k8s-mcp-server returns command string                 |
-| **Cached Reads**                   | N/A                   | 1-5ms                             | k8s-mcp-server has caching with hit/miss tracking     |
-| **Batch Operations**               | Sequential            | Parallel (20-30% faster)          | k8s-mcp-server has Promise.all batching               |
+| **Request Latency (Port-Forward)** | 80-150ms              | N/A (returns command)             | k8s-helm-mcp returns command string                 |
+| **Cached Reads**                   | N/A                   | 1-5ms                             | k8s-helm-mcp has caching with hit/miss tracking     |
+| **Batch Operations**               | Sequential            | Parallel (20-30% faster)          | k8s-helm-mcp has Promise.all batching               |
 | **Throughput**                     | 10-20 req/s           | 60-120 req/s                      | Process overhead vs API client + pooling              |
 
-**Insight:** For long-running processes (typical MCP servers), cold start difference is negligible. For read/write operations, k8s-mcp-server wins significantly with direct API calls. For exec/port-forward, k8s-mcp-server provides command generation (user executes manually), while mcp-server-kubernetes executes directly.
+**Insight:** For long-running processes (typical MCP servers), cold start difference is negligible. For read/write operations, k8s-helm-mcp wins significantly with direct API calls. For exec/port-forward, k8s-helm-mcp provides command generation (user executes manually), while mcp-server-kubernetes executes directly.
 
 ### Feature Completeness
 
-| Category | mcp-server-kubernetes | k8s-mcp-server v0.17.0 |
+| Category | mcp-server-kubernetes | k8s-helm-mcp v0.18.0 |
 |----------|---------------------|------------------------|
 | **Tools** | 25 basic tools | 262+ comprehensive tools |
 | **Helm** | 3 operations | 40+ operations (full CLI) |
@@ -83,7 +83,7 @@
 | **Authentication** | None | Bearer Token (for SSE transport) |
 | **DoS Protection** | No | Yes (Payload & document limits) |
 
-**Insight:** k8s-mcp-server is objectively more feature-complete. The tool count alone (4x difference) indicates broader coverage.
+**Insight:** k8s-helm-mcp is objectively more feature-complete. The tool count alone (4x difference) indicates broader coverage.
 
 ### Production Readiness
 
@@ -95,7 +95,7 @@
 - ❌ Basic error messages (harder to debug)
 - ❌ No protection modes (higher risk)
 
-**k8s-mcp-server:**
+**k8s-helm-mcp:**
 - ✅ Caching (reduces API load)
 - ✅ Retry logic (handles transient failures)
 - ✅ Advanced error classification (actionable)
@@ -110,7 +110,7 @@
 - ✅ DoS Protection (Manifest size & document limits)
 - ✅ Flexible kubeconfig (deployment flexibility)
 
-**Insight:** k8s-mcp-server has more production-grade features. Observability can be added; caching/retry/protection are harder to retrofit.
+**Insight:** k8s-helm-mcp has more production-grade features. Observability can be added; caching/retry/protection are harder to retrofit.
 
 ### Dependencies & Complexity
 
@@ -121,14 +121,14 @@
 - Complexity: Low (simple wrappers)
 - Extension: Easy (add new kubectl command)
 
-**k8s-mcp-server:**
+**k8s-helm-mcp:**
 - Dependencies: MCP SDK + @kubernetes/client-node
 - Bundle: 5-8MB
 - External dependency: kubectl binary (used for config validation only)
 - Complexity: High (caching, validation, error handling)
 - Extension: Moderate (follow patterns)
 
-**Insight:** Both require kubectl, but k8s-mcp-server uses it minimally (config only), while mcp-server-kubernetes uses it for all operations. k8s-mcp-server has more moving parts but provides more value.
+**Insight:** Both require kubectl, but k8s-helm-mcp uses it minimally (config only), while mcp-server-kubernetes uses it for all operations. k8s-helm-mcp has more moving parts but provides more value.
 
 ### Use Case Fit
 
@@ -141,7 +141,7 @@
 - Tool count is not critical
 - You need direct exec/port-forward execution (not command generation)
 
-**Choose k8s-mcp-server if:**
+**Choose k8s-helm-mcp if:**
 - Performance matters for read/write operations (latency/throughput)
 - You need comprehensive Kubernetes coverage
 - Production safety is important (protection modes)
@@ -169,7 +169,7 @@ const result = execFileSync("kubectl", args, {
 return { content: [{ type: "text", text: result }] };
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // k8s-client.ts
 async getPod(name: string, namespace: string): Promise<k8s.V1Pod> {
@@ -184,7 +184,7 @@ async getPod(name: string, namespace: string): Promise<k8s.V1Pod> {
 }
 ```
 
-**Difference:** mcp-server-kubernetes spawns kubectl process (80-150ms), k8s-mcp-server makes direct API call (10-50ms).
+**Difference:** mcp-server-kubernetes spawns kubectl process (80-150ms), k8s-helm-mcp makes direct API call (10-50ms).
 
 ---
 
@@ -201,7 +201,7 @@ const result = execFileSync("kubectl", args, {
 });
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // k8s-client.ts
 async applyManifest(manifest: string, namespace?: string): Promise<any> {
@@ -222,7 +222,7 @@ async applyManifest(manifest: string, namespace?: string): Promise<any> {
 }
 ```
 
-**Difference:** mcp-server-kubernetes delegates to kubectl apply, k8s-mcp-server parses YAML and uses typed API clients for each resource type.
+**Difference:** mcp-server-kubernetes delegates to kubectl apply, k8s-helm-mcp parses YAML and uses typed API clients for each resource type.
 
 ---
 
@@ -243,7 +243,7 @@ const result = execFileSync("kubectl", args, {
 });
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // k8s-client.ts
 async getPodLogs(name: string, namespace: string, options?: LogOptions): Promise<string> {
@@ -262,7 +262,7 @@ async getPodLogs(name: string, namespace: string, options?: LogOptions): Promise
 }
 ```
 
-**Difference:** mcp-server-kubernetes uses kubectl logs with process spawning, k8s-mcp-server uses direct API call with typed options.
+**Difference:** mcp-server-kubernetes uses kubectl logs with process spawning, k8s-helm-mcp uses direct API call with typed options.
 
 ---
 
@@ -278,7 +278,7 @@ const result = execFileSync("helm", args, {
 });
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // helm-tools/common.ts
 const args = ["install", release, chart, ...helmArgs];
@@ -288,7 +288,7 @@ const result = execFileSync("helm", args, {
 });
 ```
 
-**Difference:** Both use helm CLI directly. k8s-mcp-server has more comprehensive Helm tool coverage (20+ vs 3).
+**Difference:** Both use helm CLI directly. k8s-helm-mcp has more comprehensive Helm tool coverage (20+ vs 3).
 
 ---
 
@@ -307,7 +307,7 @@ inputSchema: {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // Kubernetes spec validation
 export function validateResourceName(name: string, resourceType: string): void {
@@ -322,7 +322,7 @@ export function validateResourceName(name: string, resourceType: string): void {
 }
 ```
 
-**Advantage:** k8s-mcp-server validates against Kubernetes naming conventions, preventing 40% of API errors.
+**Advantage:** k8s-helm-mcp validates against Kubernetes naming conventions, preventing 40% of API errors.
 
 ---
 
@@ -339,7 +339,7 @@ const result = execFileSync("kubectl", args, { ... });
 // execFileSync does not invoke shell, preventing injection
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // websocket.ts - Direct execution with execFileSync (mode="direct")
 if (mode === "direct") {
@@ -357,7 +357,7 @@ const kubectlCommand = `kubectl exec ${resourceName} -n ${ns} -- ${(command || [
 return { kubectlCommand, websocketUrl, note: "User must execute this command manually" };
 ```
 
-**Advantage:** k8s-mcp-server supports both safe direct execution (array-based commands) and flexible websocket mode. Matches mcp-server-kubernetes security.
+**Advantage:** k8s-helm-mcp supports both safe direct execution (array-based commands) and flexible websocket mode. Matches mcp-server-kubernetes security.
 
 ---
 
@@ -370,7 +370,7 @@ return { kubectlCommand, websocketUrl, note: "User must execute this command man
 - Per request: +10-20MB (kubectl process)
 - Peak memory: ~100-200MB (concurrent requests)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - Base memory: ~150-200MB (Node.js + @kubernetes/client-node)
 - Per request: +1-2MB (API client)
 - Peak memory: ~200-300MB (concurrent requests)
@@ -386,12 +386,12 @@ return { kubectlCommand, websocketUrl, note: "User must execute this command man
 - Per request: 5-10% CPU (kubectl process spawn + execution)
 - High throughput: 50-80% CPU (process overhead)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - Idle: <1% CPU
 - Per request: 1-3% CPU (API call only)
 - High throughput: 20-40% CPU (no process overhead)
 
-**Advantage:** k8s-mcp-server more CPU-efficient for high-throughput scenarios.
+**Advantage:** k8s-helm-mcp more CPU-efficient for high-throughput scenarios.
 
 ---
 
@@ -433,7 +433,7 @@ loadKubeconfig(): string {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // k8s-client.ts
 async loadKubeconfig(): Promise<k8s.KubeConfig> {
@@ -472,7 +472,7 @@ async loadKubeconfig(): Promise<k8s.KubeConfig> {
 }
 ```
 
-**Advantage:** Both servers now have flexible kubeconfig loading (6 sources). k8s-mcp-server matches mcp-server-kubernetes's flexibility.
+**Advantage:** Both servers now have flexible kubeconfig loading (6 sources). k8s-helm-mcp matches mcp-server-kubernetes's flexibility.
 
 ---
 
@@ -489,7 +489,7 @@ async loadKubeconfig(): Promise<k8s.KubeConfig> {
 - `OTEL_EXPORTER_OTLP_ENDPOINT` - OTLP endpoint
 - `OTEL_SERVICE_NAME` - Service name for tracing
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - `KUBECONFIG_YAML` - YAML kubeconfig content
 - `KUBECONFIG_JSON` - JSON kubeconfig content
 - `K8S_SERVER` - Kubernetes API server URL
@@ -506,7 +506,7 @@ async loadKubeconfig(): Promise<k8s.KubeConfig> {
 - `ENABLE_TELEMETRY` - Enable OpenTelemetry (default: true)
 - `TRANSPORT` - Transport type (stdio, default: stdio)
 
-**Advantage:** Both servers have comprehensive configuration options. k8s-mcp-server adds OpenTelemetry and transport configuration.
+**Advantage:** Both servers have comprehensive configuration options. k8s-helm-mcp adds OpenTelemetry and transport configuration.
 
 ---
 
@@ -544,7 +544,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // 1. Create new tool file
 // src/k8s-tools/my-tools.ts
@@ -581,7 +581,7 @@ const myTools = registerMyTools(k8sClient);
 toolRegistry.registerMany(myTools);
 ```
 
-**Advantage:** mcp-server-kubernetes is simpler to extend (just add kubectl command). k8s-mcp-server requires more boilerplate (validation, error handling, API client usage).
+**Advantage:** mcp-server-kubernetes is simpler to extend (just add kubectl command). k8s-helm-mcp requires more boilerplate (validation, error handling, API client usage).
 
 ---
 
@@ -601,7 +601,7 @@ kubectl get pods -n production
 # Returns output
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```bash
 # User calls tool
 Tool: k8s_list_pods
@@ -614,7 +614,7 @@ Args: { namespace: "production" }
 # Return output
 ```
 
-**Winner:** k8s-mcp-server (faster, cached)
+**Winner:** k8s-helm-mcp (faster, cached)
 
 ---
 
@@ -632,7 +632,7 @@ kubectl exec my-pod -n production -- ls -la
 # Returns output directly
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```bash
 # User calls tool (direct mode)
 Tool: k8s_exec_pod
@@ -655,7 +655,7 @@ Args: { resource: "my-pod", namespace: "production", command: ["ls", "-la"] }
 }
 ```
 
-**Winner:** Tie (both support direct execution, k8s-mcp-server offers flexible modes)
+**Winner:** Tie (both support direct execution, k8s-helm-mcp offers flexible modes)
 
 ---
 
@@ -673,7 +673,7 @@ kubectl apply -f -
 # Returns output
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```bash
 # User calls tool
 Tool: k8s_apply_manifest
@@ -686,7 +686,7 @@ Args: { manifest: "apiVersion: apps/v1\nkind: Deployment\n..." }
 # Return result with error classification
 ```
 
-**Winner:** k8s-mcp-server (faster, validation, better error messages)
+**Winner:** k8s-helm-mcp (faster, validation, better error messages)
 
 ---
 
@@ -705,7 +705,7 @@ RUN bun run build
 CMD ["bun", "run", "index.ts"]
 ```
 
-**k8s-mcp-server-main (Node.js):**
+**k8s-helm-mcp-main (Node.js):**
 ```dockerfile
 FROM node:20-alpine
 WORKDIR /app
@@ -716,7 +716,7 @@ RUN npm run build
 CMD ["node", "dist/index.js"]
 ```
 
-**k8s-mcp-server-main (Bun - Recommended):**
+**k8s-helm-mcp-main (Bun - Recommended):**
 ```dockerfile
 FROM oven/bun:1.1
 WORKDIR /app
@@ -727,7 +727,7 @@ RUN bun run build
 CMD ["bun", "run", "dist/index.js"]
 ```
 
-**Difference:** Both support Bun for faster cold start. k8s-mcp-server offers runtime choice (Node.js or Bun).
+**Difference:** Both support Bun for faster cold start. k8s-helm-mcp offers runtime choice (Node.js or Bun).
 
 ---
 
@@ -762,7 +762,7 @@ spec:
           secretName: kubeconfig
 ```
 
-**k8s-mcp-server-main (Node.js):**
+**k8s-helm-mcp-main (Node.js):**
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -771,7 +771,7 @@ spec:
     spec:
       containers:
       - name: mcp-server
-        image: k8s-mcp-server:latest
+        image: k8s-helm-mcp:latest
         resources:
           requests:
             memory: "256Mi"
@@ -791,7 +791,7 @@ spec:
           secretName: kubeconfig
 ```
 
-**k8s-mcp-server-main (Bun - Recommended):**
+**k8s-helm-mcp-main (Bun - Recommended):**
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -800,7 +800,7 @@ spec:
     spec:
       containers:
       - name: mcp-server
-        image: k8s-mcp-server:latest
+        image: k8s-helm-mcp:latest
         command: ["bun", "run", "dist/index.js"]
         resources:
           requests:
@@ -821,13 +821,13 @@ spec:
           secretName: kubeconfig
 ```
 
-**Difference:** k8s-mcp-server with Bun matches mcp-server-kubernetes resource requirements. Node.js requires more resources.
+**Difference:** k8s-helm-mcp with Bun matches mcp-server-kubernetes resource requirements. Node.js requires more resources.
 
 ---
 
 ## Summary of Trade-offs
 
-| Aspect | mcp-server-kubernetes | k8s-mcp-server |
+| Aspect | mcp-server-kubernetes | k8s-helm-mcp |
 |--------|---------------------|----------------|
 | **Simplicity** | ✅ Simple kubectl wrappers | ❌ Complex architecture |
 | **Performance (Read/Write)** | ❌ Process spawning overhead | ✅ Direct API calls |
@@ -848,7 +848,7 @@ spec:
 
 ### Unbiased Verdict
 
-**For most production use cases:** k8s-mcp-server-main
+**For most production use cases:** k8s-helm-mcp-main
 - 3-7x faster request latency
 - 5-10x higher throughput
 - 4x more tools
@@ -861,7 +861,7 @@ spec:
 - Built-in observability
 - Easier to extend quickly
 
-**The trade-off is clear:** simplicity vs. completeness. k8s-mcp-server trades complexity for performance and features. mcp-server-kubernetes trades features for simplicity. Your choice depends on what you value more.
+**The trade-off is clear:** simplicity vs. completeness. k8s-helm-mcp trades complexity for performance and features. mcp-server-kubernetes trades features for simplicity. Your choice depends on what you value more.
 
 ---
 
@@ -877,9 +877,9 @@ spec:
 - **Documentation:** Clear, focused on kubectl wrapper approach
 - **Community:** Smaller but focused on simplicity
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Author:** meetpatel1111
-- **Repository:** https://github.com/meetpatel1111/k8s-mcp-server
+- **Repository:** https://github.com/meetpatel1111/k8s-helm-mcp
 - **Stars:** (check GitHub for current count)
 - **Issues:** Active development, comprehensive feature requests
 - **Documentation:** Extensive, covers all 100+ tools
@@ -898,14 +898,14 @@ spec:
 - **Security patches:** kubectl updates handle CVEs
 - **Maintenance effort:** Low (simple wrappers)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Dependency updates:** Regular (@kubernetes/client-node updates)
 - **Kubernetes version compatibility:** Needs testing for new versions
 - **Breaking changes:** More frequent (API client changes)
 - **Security patches:** Need to update client library
 - **Maintenance effort:** High (100+ tools, validation, error handling)
 
-**Insight:** mcp-server-kubernetes has lower maintenance burden. k8s-mcp-server requires more active maintenance but provides more control.
+**Insight:** mcp-server-kubernetes has lower maintenance burden. k8s-helm-mcp requires more active maintenance but provides more control.
 
 ---
 
@@ -918,14 +918,14 @@ spec:
 - **Debugging:** Easy (kubectl commands visible)
 - **Documentation:** Minimal needed (kubectl docs apply)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Setup time:** 15-30 minutes
 - **Understanding code:** 4-8 hours (complex architecture)
 - **Adding tools:** 30-60 minutes per tool
 - **Debugging:** Moderate (need to understand error classification)
 - **Documentation:** Extensive needed for custom tools
 
-**Insight:** mcp-server-kubernetes has gentler learning curve. k8s-mcp-server requires more upfront investment.
+**Insight:** mcp-server-kubernetes has gentler learning curve. k8s-helm-mcp requires more upfront investment.
 
 ---
 
@@ -945,7 +945,7 @@ describe("kubectl_get", () => {
 });
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // Comprehensive unit tests with mocking
 describe("K8sClient", () => {
@@ -962,7 +962,7 @@ describe("K8sClient", () => {
 });
 ```
 
-**Insight:** k8s-mcp-server enables better unit testing (mockable API clients). mcp-server-kubernetes requires integration tests (kubectl dependency).
+**Insight:** k8s-helm-mcp enables better unit testing (mockable API clients). mcp-server-kubernetes requires integration tests (kubectl dependency).
 
 ---
 
@@ -975,14 +975,14 @@ describe("K8sClient", () => {
 - **Logging:** Minimal (kubectl output only)
 - **Debug tools:** kubectl command visibility
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Error messages:** Classified with suggestions
 - **Stack traces:** Detailed (error handling layers)
 - **Reproduction:** Moderate (need to understand API call)
 - **Logging:** Extensive (retry attempts, cache hits)
 - **Debug tools:** Protection mode indicators, cache statistics
 
-**Insight:** k8s-mcp-server provides better debugging experience with classified errors and suggestions.
+**Insight:** k8s-helm-mcp provides better debugging experience with classified errors and suggestions.
 
 ---
 
@@ -995,14 +995,14 @@ describe("K8sClient", () => {
 - **Rate limiting:** kubectl handles (but can hit server limits)
 - **Optimal use case:** Low to medium traffic (<50 req/s)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Horizontal scaling:** Effective (API client pooling)
 - **Vertical scaling:** Effective (more CPU for API calls)
 - **Cluster load:** Reduced (caching, efficient API usage)
 - **Rate limiting:** Built-in (retry with backoff)
 - **Optimal use case:** High traffic (50-200+ req/s)
 
-**Insight:** k8s-mcp-server scales better for high-traffic scenarios due to caching and efficient API usage.
+**Insight:** k8s-helm-mcp scales better for high-traffic scenarios due to caching and efficient API usage.
 
 ---
 
@@ -1015,20 +1015,20 @@ describe("K8sClient", () => {
 - **Concurrent operations:** Process spawn limits
 - **Kubectl version:** Must match cluster API version
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Large outputs:** Limited by API client (configurable)
 - **Long-running commands:** Returns command string (user executes)
 - **Binary data:** Supports via API client
 - **Concurrent operations:** No process limits
 - **Kubectl version:** Only needed for config validation
 
-**Insight:** k8s-mcp-server handles edge cases better (no process limits, binary support).
+**Insight:** k8s-helm-mcp handles edge cases better (no process limits, binary support).
 
 ---
 
-### Future Roadmap Considerations for k8s-mcp-server
+### Future Roadmap Considerations for k8s-helm-mcp
 
-**k8s-mcp-server-main (v0.13.0):**
+**k8s-helm-mcp-main (v0.13.0):**
 - **Completed in v0.13.0:**
   - ✅ OpenTelemetry integration (observability)
   - ✅ Bun runtime support (faster execution)
@@ -1044,7 +1044,7 @@ describe("K8sClient", () => {
 - **Technical debt:** Moderate (complex architecture)
 - **Upgrade path:** Requires testing (API client changes)
 
-**Insight:** k8s-mcp-server has completed major optimization roadmap items. Remaining work focuses on deployment flexibility and bundle optimization.
+**Insight:** k8s-helm-mcp has completed major optimization roadmap items. Remaining work focuses on deployment flexibility and bundle optimization.
 
 ---
 
@@ -1059,18 +1059,18 @@ describe("K8sClient", () => {
     echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"kubectl_apply","arguments":{"manifest":"..."}}}' | nc localhost 3000
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // CI/CD integration with caching
 - name: Deploy with MCP
   run: |
-    k8s-mcp-server &
+    k8s-helm-mcp &
     # First call: API request (slow)
     # Subsequent calls: Cache hit (fast)
     echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"k8s_list_pods","arguments":{"namespace":"production"}}}' | nc localhost 3000
 ```
 
-**Insight:** k8s-mcp-server provides better CI/CD integration with caching for repeated operations.
+**Insight:** k8s-helm-mcp provides better CI/CD integration with caching for repeated operations.
 
 ---
 
@@ -1084,7 +1084,7 @@ describe("K8sClient", () => {
 5. Keep kubectl version updated
 6. Use read-only mode for safe operations
 
-**For k8s-mcp-server-main:**
+**For k8s-helm-mcp-main:**
 1. Enable caching for read-heavy workloads
 2. Use protection modes in production
 3. Configure appropriate timeouts and retry attempts
@@ -1102,13 +1102,13 @@ describe("K8sClient", () => {
 - **Network:** Higher (kubectl process overhead)
 - **Monthly cost:** ~$5-10 (small instance)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Infrastructure:** Higher resource requirements (256Mi RAM, 200m CPU)
 - **Cluster load:** Lower (caching reduces API calls)
 - **Network:** Lower (direct API calls)
 - **Monthly cost:** ~$10-20 (medium instance)
 
-**Insight:** k8s-mcp-server has higher infrastructure cost but lower cluster load. Trade-off depends on cluster pricing.
+**Insight:** k8s-helm-mcp has higher infrastructure cost but lower cluster load. Trade-off depends on cluster pricing.
 
 ---
 
@@ -1121,14 +1121,14 @@ describe("K8sClient", () => {
 - **Maintenance risk:** Low (minimal dependencies)
 - **Upgrade risk:** Low (kubectl handles API changes)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Technical risk:** Moderate (complex architecture)
 - **Security risk:** Low (direct API, no shell)
 - **Operational risk:** Moderate (more moving parts)
 - **Maintenance risk:** High (100+ tools, dependencies)
 - **Upgrade risk:** Moderate (API client changes)
 
-**Insight:** mcp-server-kubernetes has lower overall risk. k8s-mcp-server has higher complexity but better security.
+**Insight:** mcp-server-kubernetes has lower overall risk. k8s-helm-mcp has higher complexity but better security.
 
 ---
 
@@ -1146,7 +1146,7 @@ describe("K8sClient", () => {
 - [ ] Your team is new to Kubernetes
 - [ ] You want minimal maintenance burden
 
-**Choose k8s-mcp-server if you answer YES to 3+ of these:**
+**Choose k8s-helm-mcp if you answer YES to 3+ of these:**
 - [ ] Performance is critical (latency/throughput)
 - [ ] You need comprehensive Kubernetes coverage
 - [ ] Production safety is important
@@ -1163,83 +1163,83 @@ describe("K8sClient", () => {
 
 ### List Operations
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------|---------------------|----------------|--------|
-| List Pods | `kubectl_get pods` | `k8s_list_pods` | k8s-mcp-server (cached) |
-| List Deployments | `kubectl_get deployments` | `k8s_list_deployments` | k8s-mcp-server (cached) |
-| List Services | `kubectl_get services` | `k8s_list_services` | k8s-mcp-server (cached) |
-| List All Resources | `kubectl_get all` | `k8s_list_pods` + others | k8s-mcp-server (specific tools) |
-| List Namespaces | `kubectl_get namespaces` | `k8s_list_namespaces` | k8s-mcp-server (cached) |
+| List Pods | `kubectl_get pods` | `k8s_list_pods` | k8s-helm-mcp (cached) |
+| List Deployments | `kubectl_get deployments` | `k8s_list_deployments` | k8s-helm-mcp (cached) |
+| List Services | `kubectl_get services` | `k8s_list_services` | k8s-helm-mcp (cached) |
+| List All Resources | `kubectl_get all` | `k8s_list_pods` + others | k8s-helm-mcp (specific tools) |
+| List Namespaces | `kubectl_get namespaces` | `k8s_list_namespaces` | k8s-helm-mcp (cached) |
 
-**Insight:** k8s-mcp-server has dedicated tools for each resource type with caching.
+**Insight:** k8s-helm-mcp has dedicated tools for each resource type with caching.
 
 ---
 
 ### Get Operations
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------|---------------------|----------------|--------|
-| Get Pod Details | `kubectl_get pod/name` | `k8s_get_pod` | k8s-mcp-server (typed response) |
-| Get Pod YAML | `kubectl_get pod/name -o yaml` | `k8s_get_resource_yaml` | k8s-mcp-server (direct API) |
-| Get Pod Events | `kubectl describe pod/name` | `k8s_get_pod_events` | k8s-mcp-server (dedicated tool) |
-| Get Pod Logs | `kubectl_logs` | `k8s_get_pod_logs` | k8s-mcp-server (more options) |
-| Get Pod Metrics | N/A | `k8s_get_pod_metrics` | k8s-mcp-server (unique feature) |
+| Get Pod Details | `kubectl_get pod/name` | `k8s_get_pod` | k8s-helm-mcp (typed response) |
+| Get Pod YAML | `kubectl_get pod/name -o yaml` | `k8s_get_resource_yaml` | k8s-helm-mcp (direct API) |
+| Get Pod Events | `kubectl describe pod/name` | `k8s_get_pod_events` | k8s-helm-mcp (dedicated tool) |
+| Get Pod Logs | `kubectl_logs` | `k8s_get_pod_logs` | k8s-helm-mcp (more options) |
+| Get Pod Metrics | N/A | `k8s_get_pod_metrics` | k8s-helm-mcp (unique feature) |
 
-**Insight:** k8s-mcp-server provides more detailed pod information with dedicated tools.
+**Insight:** k8s-helm-mcp provides more detailed pod information with dedicated tools.
 
 ---
 
 ### Create Operations
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------|---------------------|----------------|--------|
-| Create Pod | `kubectl_create pod` | `k8s_run` | k8s-mcp-server (validation) |
-| Create Deployment | `kubectl_apply` | `k8s_create_deployment` | k8s-mcp-server (typed) |
-| Create Service | `kubectl_apply` | `k8s_create_service` | k8s-mcp-server (typed) |
-| Create ConfigMap | `kubectl_create configmap` | `k8s_create_configmap` | k8s-mcp-server (typed) |
-| Create Secret | `kubectl_create secret` | `k8s_create_secret` | k8s-mcp-server (typed) |
+| Create Pod | `kubectl_create pod` | `k8s_run` | k8s-helm-mcp (validation) |
+| Create Deployment | `kubectl_apply` | `k8s_create_deployment` | k8s-helm-mcp (typed) |
+| Create Service | `kubectl_apply` | `k8s_create_service` | k8s-helm-mcp (typed) |
+| Create ConfigMap | `kubectl_create configmap` | `k8s_create_configmap` | k8s-helm-mcp (typed) |
+| Create Secret | `kubectl_create secret` | `k8s_create_secret` | k8s-helm-mcp (typed) |
 
-**Insight:** k8s-mcp-server has typed create tools with validation.
+**Insight:** k8s-helm-mcp has typed create tools with validation.
 
 ---
 
 ### Update Operations
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------|---------------------|----------------|--------|
-| Update Deployment | `kubectl_apply` | `k8s_set_image` | k8s-mcp-server (specific tool) |
-| Scale Deployment | `kubectl_scale` | `k8s_scale_deployment` | k8s-mcp-server (validation) |
-| Update ConfigMap | `kubectl_apply` | `k8s_update_configmap` | k8s-mcp-server (typed) |
-| Rollout Restart | `kubectl_rollout restart` | `k8s_restart_deployment` | k8s-mcp-server (validation) |
+| Update Deployment | `kubectl_apply` | `k8s_set_image` | k8s-helm-mcp (specific tool) |
+| Scale Deployment | `kubectl_scale` | `k8s_scale_deployment` | k8s-helm-mcp (validation) |
+| Update ConfigMap | `kubectl_apply` | `k8s_update_configmap` | k8s-helm-mcp (typed) |
+| Rollout Restart | `kubectl_rollout restart` | `k8s_restart_deployment` | k8s-helm-mcp (validation) |
 
-**Insight:** k8s-mcp-server has specific update tools with validation.
+**Insight:** k8s-helm-mcp has specific update tools with validation.
 
 ---
 
 ### Delete Operations
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------|---------------------|----------------|--------|
-| Delete Pod | `kubectl_delete pod` | `k8s_delete_pod` | k8s-mcp-server (protection modes) |
-| Delete Deployment | `kubectl_delete deployment` | `k8s_delete_deployment` | k8s-mcp-server (protection modes) |
+| Delete Pod | `kubectl_delete pod` | `k8s_delete_pod` | k8s-helm-mcp (protection modes) |
+| Delete Deployment | `kubectl_delete deployment` | `k8s_delete_deployment` | k8s-helm-mcp (protection modes) |
 | Force Delete | `kubectl_delete --force` | `k8s_delete --force` | Tie |
-| Bulk Delete | N/A | `k8s_bulk_delete_pods` | k8s-mcp-server (unique feature) |
+| Bulk Delete | N/A | `k8s_bulk_delete_pods` | k8s-helm-mcp (unique feature) |
 
-**Insight:** k8s-mcp-server has protection modes and bulk delete capabilities.
+**Insight:** k8s-helm-mcp has protection modes and bulk delete capabilities.
 
 ---
 
 ### Advanced Operations
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------|---------------------|----------------|--------|
-| Node Cordon | `node_management cordon` | `k8s_cordon_node` | k8s-mcp-server (validation) |
-| Node Drain | `node_management drain` | `k8s_drain_node` | k8s-mcp-server (safety checks) |
+| Node Cordon | `node_management cordon` | `k8s_cordon_node` | k8s-helm-mcp (validation) |
+| Node Drain | `node_management drain` | `k8s_drain_node` | k8s-helm-mcp (safety checks) |
 | Port Forward | `startPortForward` | `k8s_port_forward` | mcp-server-kubernetes (direct execution) |
-| Pod Debug | N/A | `k8s_debug_pod` | k8s-mcp-server (unique feature) |
-| Health Check | N/A | `k8s_cluster_health` | k8s-mcp-server (unique feature) |
+| Pod Debug | N/A | `k8s_debug_pod` | k8s-helm-mcp (unique feature) |
+| Health Check | N/A | `k8s_cluster_health` | k8s-helm-mcp (unique feature) |
 
-**Insight:** k8s-mcp-server has more advanced cluster management tools.
+**Insight:** k8s-helm-mcp has more advanced cluster management tools.
 
 ---
 
@@ -1253,13 +1253,13 @@ Request → Spawn kubectl → TCP to API Server → Response → kubectl → Res
 Latency: 80-150ms (process spawn + network)
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```
 Request → API Client → TCP to API Server → Response
 Latency: 10-50ms (network only, cached: 1-5ms)
 ```
 
-**Insight:** k8s-mcp-server eliminates process spawn overhead.
+**Insight:** k8s-helm-mcp eliminates process spawn overhead.
 
 ---
 
@@ -1271,13 +1271,13 @@ Latency: 10-50ms (network only, cached: 1-5ms)
 - **CPU usage:** 5-10% per request
 - **Throughput limit:** ~50 req/s (process limits)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Max concurrent API calls:** Limited by connection pool
 - **Memory overhead:** ~1-2MB per request
 - **CPU usage:** 1-3% per request
 - **Throughput limit:** ~200 req/s (with connection pooling)
 
-**Insight:** k8s-mcp-server handles 4x more concurrent requests.
+**Insight:** k8s-helm-mcp handles 4x more concurrent requests.
 
 ---
 
@@ -1289,13 +1289,13 @@ Latency: 10-50ms (network only, cached: 1-5ms)
 - **Long-running:** Risk of zombie processes
 - **Mitigation:** Process timeout enforcement
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Potential leaks:** API client connections not closed
 - **Cleanup:** Automatic (connection pooling)
 - **Long-running:** Minimal risk (HTTP keep-alive)
 - **Mitigation:** Connection pool limits
 
-**Insight:** k8s-mcp-server has better memory management with connection pooling.
+**Insight:** k8s-helm-mcp has better memory management with connection pooling.
 
 ---
 
@@ -1312,7 +1312,7 @@ try {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // Advanced error handling with retry
 async getPod(name: string, namespace: string) {
@@ -1324,7 +1324,7 @@ async getPod(name: string, namespace: string) {
 }
 ```
 
-**Insight:** k8s-mcp-server has automatic retry with exponential backoff.
+**Insight:** k8s-helm-mcp has automatic retry with exponential backoff.
 
 ---
 
@@ -1339,7 +1339,7 @@ async getPod(name: string, namespace: string) {
 - **In-cluster auth:** Automatic detection
 - **No additional auth layer:** Uses kubectl auth
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Token auth:** Via kubeconfig
 - **Certificate auth:** Via kubeconfig
 - **OIDC auth:** Via kubeconfig
@@ -1359,7 +1359,7 @@ const args = ["exec", podName, "--", ...command];
 execFileSync("kubectl", args); // No shell, safe
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // Kubernetes spec validation
 validateResourceName(name, "pod");
@@ -1367,7 +1367,7 @@ validateNamespace(namespace);
 validateLabelSelector(selector);
 ```
 
-**Insight:** k8s-mcp-server has more comprehensive input validation.
+**Insight:** k8s-helm-mcp has more comprehensive input validation.
 
 ---
 
@@ -1379,7 +1379,7 @@ validateLabelSelector(selector);
 - **Risk:** Sensitive data in output
 - **Mitigation:** User responsibility
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Typed API response:** Structured output
 - **No sanitization:** User sees raw output
 - **Risk:** Sensitive data in output
@@ -1398,14 +1398,14 @@ validateLabelSelector(selector);
 - **Memory isolation:** High (separate processes)
 - **CPU overhead:** High (process management)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Model:** Event-driven (Node.js)
 - **Concurrency:** Limited by connection pool
 - **Context switching:** Low (async/await)
 - **Memory isolation:** Low (shared process)
 - **CPU overhead:** Low (no process management)
 
-**Insight:** k8s-mcp-server has more efficient concurrency model.
+**Insight:** k8s-helm-mcp has more efficient concurrency model.
 
 ---
 
@@ -1418,14 +1418,14 @@ validateLabelSelector(selector);
 - **Log aggregation:** Via OpenTelemetry
 - **Debug logs:** kubectl verbose mode
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Logging:** Extensive (error classification, cache stats)
 - **Structured logs:** Yes (JSON format possible)
 - **Log levels:** Yes (error, warn, info, debug)
 - **Log aggregation:** Can be added via OpenTelemetry
 - **Debug logs:** Retry attempts, cache hits/misses
 
-**Insight:** k8s-mcp-server has more comprehensive logging capabilities.
+**Insight:** k8s-helm-mcp has more comprehensive logging capabilities.
 
 ---
 
@@ -1439,13 +1439,13 @@ validateLabelSelector(selector);
 - **Test speed:** Slow (actual kubectl calls)
 - **Test isolation:** Low (requires cluster)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Testability:** High (mockable API client)
 - **Mocking:** Easy (jest.mock)
 - **Test speed:** Fast (no external calls)
 - **Test isolation:** High (no cluster needed)
 
-**Insight:** k8s-mcp-server is much more testable.
+**Insight:** k8s-helm-mcp is much more testable.
 
 ---
 
@@ -1457,13 +1457,13 @@ validateLabelSelector(selector);
 - **Test isolation:** Medium (test cluster)
 - **Test coverage:** Basic (happy path)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Testability:** High (API client in test cluster)
 - **Test speed:** Fast (direct API calls)
 - **Test isolation:** High (test cluster)
 - **Test coverage:** Comprehensive (error paths, retries)
 
-**Insight:** k8s-mcp-server enables better integration testing.
+**Insight:** k8s-helm-mcp enables better integration testing.
 
 ---
 
@@ -1476,14 +1476,14 @@ validateLabelSelector(selector);
 - **Error docs:** None
 - **Migration docs:** None
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Tool documentation:** Comprehensive (description, examples)
 - **Parameter docs:** Detailed (type, description, validation)
 - **Example usage:** Extensive (multiple examples)
 - **Error docs:** Classified with suggestions
 - **Migration docs:** Can be added
 
-**Insight:** k8s-mcp-server has better documentation foundation.
+**Insight:** k8s-helm-mcp has better documentation foundation.
 
 ---
 
@@ -1501,7 +1501,7 @@ export async function myGetTool(k8sManager, input) {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // 30 minutes
 export function registerMyTool(k8sClient) {
@@ -1533,7 +1533,7 @@ export async function myCreateTool(k8sManager, input) {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // 45 minutes
 export function registerMyCreateTool(k8sClient) {
@@ -1548,7 +1548,7 @@ export function registerMyCreateTool(k8sClient) {
 }
 ```
 
-**Insight:** k8s-mcp-server requires more time but provides validation and error handling.
+**Insight:** k8s-helm-mcp requires more time but provides validation and error handling.
 
 ---
 
@@ -1564,7 +1564,7 @@ export function registerMyCreateTool(k8sClient) {
 - Server ready: 5-10ms
 - **Total:** 50-100ms
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - Node.js runtime load: 100-200ms
 - MCP SDK init: 20-30ms
 - Tool registration: 30-50ms (100+ tools)
@@ -1587,7 +1587,7 @@ export function registerMyCreateTool(k8sClient) {
 - **Base:** 50-100MB
 - **Peak:** 100-200MB
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - Node.js runtime: 80-120MB
 - MCP SDK: 20-30MB
 - Tool code: 20-30MB
@@ -1608,26 +1608,26 @@ export function registerMyCreateTool(k8sClient) {
 - High throughput: 50-80% (process overhead)
 - **Efficiency:** Low (process management overhead)
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - Idle: <1%
 - Per request: 1-3% (API call only)
 - High throughput: 20-40% (no process overhead)
 - **Efficiency:** High (direct API calls)
 
-**Insight:** k8s-mcp-server is 2-3x more CPU-efficient.
+**Insight:** k8s-helm-mcp is 2-3x more CPU-efficient.
 
 ---
 
 ## Migration Guide
 
-### From mcp-server-kubernetes to k8s-mcp-server
+### From mcp-server-kubernetes to k8s-helm-mcp
 
 **Step 1: Update tool calls**
 ```typescript
 // Old (mcp-server-kubernetes)
 kubectl_get({ resource: "pods", namespace: "production" })
 
-// New (k8s-mcp-server)
+// New (k8s-helm-mcp)
 k8s_list_pods({ namespace: "production" })
 ```
 
@@ -1636,7 +1636,7 @@ k8s_list_pods({ namespace: "production" })
 // Old (mcp-server-kubernetes)
 exec_in_pod({ name: "my-pod", command: ["ls", "-la"] })
 
-// New (k8s-mcp-server)
+// New (k8s-helm-mcp)
 k8s_exec_pod({ resource: "my-pod", command: ["ls", "-la"] })
 // Note: Returns command string, user must execute manually
 ```
@@ -1646,7 +1646,7 @@ k8s_exec_pod({ resource: "my-pod", command: ["ls", "-la"] })
 // Old (mcp-server-kubernetes)
 kubectl_apply({ manifest: yamlString })
 
-// New (k8s-mcp-server)
+// New (k8s-helm-mcp)
 k8s_apply_manifest({ manifest: yamlString })
 ```
 
@@ -1670,7 +1670,7 @@ resources:
     memory: "128Mi"
     cpu: "100m"
 
-# New (k8s-mcp-server)
+# New (k8s-helm-mcp)
 resources:
   requests:
     memory: "256Mi"
@@ -1679,11 +1679,11 @@ resources:
 
 ---
 
-### From k8s-mcp-server to mcp-server-kubernetes
+### From k8s-helm-mcp to mcp-server-kubernetes
 
 **Step 1: Update tool calls**
 ```typescript
-// Old (k8s-mcp-server)
+// Old (k8s-helm-mcp)
 k8s_list_pods({ namespace: "production" })
 
 // New (mcp-server-kubernetes)
@@ -1692,7 +1692,7 @@ kubectl_get({ resource: "pods", namespace: "production" })
 
 **Step 2: Update exec operations**
 ```typescript
-// Old (k8s-mcp-server)
+// Old (k8s-helm-mcp)
 k8s_exec_pod({ resource: "my-pod", command: ["ls", "-la"] })
 // Returns command string
 
@@ -1703,7 +1703,7 @@ exec_in_pod({ name: "my-pod", command: ["ls", "-la"] })
 
 **Step 3: Update apply operations**
 ```typescript
-// Old (k8s-mcp-server)
+// Old (k8s-helm-mcp)
 k8s_apply_manifest({ manifest: yamlString })
 
 // New (mcp-server-kubernetes)
@@ -1767,7 +1767,7 @@ export KUBECONFIG_YAML="$(cat ~/.kube/config)"
 
 ---
 
-### k8s-mcp-server-main Pitfalls
+### k8s-helm-mcp-main Pitfalls
 
 **Pitfall 1: Kubectl not installed**
 ```bash
@@ -1842,7 +1842,7 @@ users:
 
 ---
 
-### k8s-mcp-server-main
+### k8s-helm-mcp-main
 
 ```typescript
 // Switch contexts via k8s_switch_context
@@ -1874,7 +1874,7 @@ kubectl auth can-i list pods --namespace=production
 
 ---
 
-### k8s-mcp-server-main
+### k8s-helm-mcp-main
 
 ```typescript
 // Uses Kubernetes API client RBAC
@@ -1911,7 +1911,7 @@ kubectl_get({ resource: "mycrds", namespace: "default" })
 
 ---
 
-### k8s-mcp-server-main
+### k8s-helm-mcp-main
 
 ```typescript
 // List CRDs
@@ -1959,18 +1959,18 @@ spec:
 
 ---
 
-### k8s-mcp-server-main
+### k8s-helm-mcp-main
 
 ```yaml
 # Custom metrics (add OpenTelemetry)
 apiVersion: v1
 kind: ServiceMonitor
 metadata:
-  name: k8s-mcp-server
+  name: k8s-helm-mcp
 spec:
   selector:
     matchLabels:
-      app: k8s-mcp-server
+      app: k8s-helm-mcp
   endpoints:
   - port: metrics
     path: /metrics
@@ -2009,21 +2009,21 @@ bun run build
 
 ---
 
-### k8s-mcp-server-main
+### k8s-helm-mcp-main
 
 ```bash
 # Backup kubeconfig
 cp ~/.kube/config ~/.kube/config.backup
 
 # Backup server configuration
-tar -czf k8s-mcp-server-backup.tar.gz \
+tar -czf k8s-helm-mcp-backup.tar.gz \
   src/ \
   package.json \
   package-lock.json \
   node_modules/
 
 # Restore
-tar -xzf k8s-mcp-server-backup.tar.gz
+tar -xzf k8s-helm-mcp-backup.tar.gz
 npm install
 npm run build
 ```
@@ -2054,7 +2054,7 @@ kubectl_apply({ manifest: serviceYaml })
 kubectl_rollout({ subcommand: "status", resource: "deployment/my-app" })
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // 1. Create namespace
 k8s_create_namespace({ name: "my-app" })
@@ -2091,7 +2091,7 @@ kubectl_describe({ resource: "pod", name: "my-pod", namespace: "production" })
 exec_in_pod({ name: "my-pod", command: ["ps", "aux"] })
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // 1. Get pod details
 k8s_get_pod({ name: "my-pod", namespace: "production" })
@@ -2122,7 +2122,7 @@ kubectl_scale({ resource: "deployment", name: "my-app", replicas: 5 })
 kubectl_get({ resource: "deployment/my-app" })
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // 1. Scale deployment
 k8s_scale_deployment({ name: "my-app", replicas: 5 })
@@ -2138,7 +2138,7 @@ k8s_get_hpa({ name: "my-app-hpa" })
 
 ## Version Compatibility Matrix
 
-| Kubernetes Version | mcp-server-kubernetes | k8s-mcp-server |
+| Kubernetes Version | mcp-server-kubernetes | k8s-helm-mcp |
 |-------------------|---------------------|----------------|
 | 1.24 | ✅ (kubectl 1.24+) | ✅ (client 0.18+) |
 | 1.25 | ✅ (kubectl 1.25+) | ✅ (client 0.19+) |
@@ -2151,9 +2151,9 @@ k8s_get_hpa({ name: "my-app-hpa" })
 
 ---
 
-## Improvement Recommendations for k8s-mcp-server
+## Improvement Recommendations for k8s-helm-mcp
 
-Based on the comparison with mcp-server-kubernetes, here are specific improvements for k8s-mcp-server:
+Based on the comparison with mcp-server-kubernetes, here are specific improvements for k8s-helm-mcp:
 
 ### Priority 1: Add Direct Exec Execution ✅ COMPLETED
 
@@ -2216,7 +2216,7 @@ const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter(),
   instrumentations: [getNodeAutoInstrumentations()],
   resource: {
-    serviceName: "k8s-mcp-server",
+    serviceName: "k8s-helm-mcp",
   },
 });
 
@@ -2586,7 +2586,7 @@ export class CacheManager {
 
 ## Conclusion & Final Recommendation
 
-**k8s-mcp-server is already superior** for production use with:
+**k8s-helm-mcp is already superior** for production use with:
 - 3-7x faster request latency for read/write operations
 - 5-10x higher throughput
 - 4x more tools (100+ vs 25)
@@ -2601,7 +2601,7 @@ export class CacheManager {
 4. Add Bun runtime for faster cold start
 5. Add flexible kubeconfig loading
 
-**After implementing these improvements, k8s-mcp-server will:**
+**After implementing these improvements, k8s-helm-mcp will:**
 - Match or exceed mcp-server-kubernetes in all areas
 - Maintain performance advantages for read/write operations
 - Add missing features (direct exec, observability, SSE)
@@ -2627,7 +2627,7 @@ export class CacheManager {
 - **Dependency Loading:** Fast (only MCP SDK)
 - **Advantage:** Faster initial startup
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Runtime:** Node.js
 - **Startup Time:** ~200-500ms
 - **Bundle Size:** ~5-8MB (includes @kubernetes/client-node)
@@ -2655,7 +2655,7 @@ Request Flow:
 Latency: 50-200ms per request (kubectl overhead)
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```
 Request Flow:
 1. Receive MCP request
@@ -2672,7 +2672,7 @@ Cache Hit: 1-5ms (from memory)
 
 **Latency Comparison:**
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server | Improvement |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp | Improvement |
 |-----------|---------------------|----------------|-------------|
 | List Pods | 80-150ms | 20-40ms | **4-7x faster** |
 | Get Pod | 60-120ms | 15-30ms | **4-4x faster** |
@@ -2680,7 +2680,7 @@ Cache Hit: 1-5ms (from memory)
 | Describe | 90-180ms | 25-50ms | **3.6-3.6x faster** |
 | Cached Read | N/A | 1-5ms | **Infinite** |
 
-**Verdict:** `k8s-mcp-server-main` is **3-7x faster** for typical operations due to direct API access and caching.
+**Verdict:** `k8s-helm-mcp-main` is **3-7x faster** for typical operations due to direct API access and caching.
 
 ---
 
@@ -2692,13 +2692,13 @@ Cache Hit: 1-5ms (from memory)
 - **Memory per Request:** ~10-20MB (kubectl process)
 - **Max Throughput:** ~10-20 requests/second
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - **Concurrent Requests:** No process spawning
 - **Process Overhead:** None (direct API calls)
 - **Memory per Request:** ~1-2MB (API client)
 - **Max Throughput:** ~50-100 requests/second
 
-**Verdict:** `k8s-mcp-server-main` handles **5-10x more throughput**.
+**Verdict:** `k8s-helm-mcp-main` handles **5-10x more throughput**.
 
 ---
 
@@ -2712,7 +2712,7 @@ Cache Hit: 1-5ms (from memory)
 - ❌ No TTL management
 - ❌ No cache invalidation
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - ✅ Response caching for read-only tools
 - ✅ Configurable TTL (default 30s)
 - ✅ Automatic cache invalidation
@@ -2736,7 +2736,7 @@ try {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // Advanced error classification
 export function classifyError(error: any, context: ErrorContext): K8sMcpError {
@@ -2765,7 +2765,7 @@ export function classifyError(error: any, context: ErrorContext): K8sMcpError {
 }
 ```
 
-**Advantage:** `k8s-mcp-server-main` provides actionable error messages with suggestions, reducing debugging time by **50-70%**.
+**Advantage:** `k8s-helm-mcp-main` provides actionable error messages with suggestions, reducing debugging time by **50-70%**.
 
 ---
 
@@ -2778,14 +2778,14 @@ export function classifyError(error: any, context: ErrorContext): K8sMcpError {
 - ❌ No strict protection
 - ❌ No no-delete protection
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - ✅ Infrastructure Protection Mode (blocks cluster-breaking operations)
 - ✅ Strict Protection Mode (blocks ALL modifications)
 - ✅ No-Delete Protection Mode (blocks deletions only)
 - ✅ Toggle All Protection Modes (master switch)
 - ✅ Confirmation requirements for dangerous operations
 
-**Advantage:** `k8s-mcp-server-main` provides **3-level protection** for production safety.
+**Advantage:** `k8s-helm-mcp-main` provides **3-level protection** for production safety.
 
 ---
 
@@ -2796,7 +2796,7 @@ export function classifyError(error: any, context: ErrorContext): K8sMcpError {
 - ❌ Fail-fast on errors
 - ❌ No exponential backoff
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - ✅ Automatic retry for transient failures
 - ✅ Exponential backoff (1s, 2s, 4s, 8s)
 - ✅ Configurable retry count (default 3)
@@ -2819,7 +2819,7 @@ inputSchema: {
 }
 ```
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 ```typescript
 // Comprehensive validation
 export function validateResourceName(name: string, resourceType: string): void {
@@ -2843,7 +2843,7 @@ export function validateNamespace(namespace: string): void {
 }
 ```
 
-**Advantage:** `k8s-mcp-server-main` validates against **Kubernetes naming conventions**, preventing 40% of API errors.
+**Advantage:** `k8s-helm-mcp-main` validates against **Kubernetes naming conventions**, preventing 40% of API errors.
 
 ---
 
@@ -2859,7 +2859,7 @@ export function validateNamespace(namespace: string): void {
 - explain_resource, list_api_resources
 - ping, cleanup
 
-**k8s-mcp-server-main Tools (100+):**
+**k8s-helm-mcp-main Tools (100+):**
 - **Pods:** list, get, describe, events, logs, metrics, top, exec, port-forward, debug, find-unhealthy, find-crashloop
 - **Deployments:** list, get, describe, rollout status, rollout history, rollout pause/resume, restart, scale, autoscale
 - **StatefulSets:** list, get, describe, rollout, restart, scale
@@ -2885,7 +2885,7 @@ export function validateNamespace(namespace: string): void {
 - **Advanced:** watch resources, debug scheduling, analyze pod failure, suggest optimizations
 - **Server Tools:** MCP server info, health check, tool metrics, protection mode toggles
 
-**Advantage:** `k8s-mcp-server-main` provides **4x more tools** with specialized operations.
+**Advantage:** `k8s-helm-mcp-main` provides **4x more tools** with specialized operations.
 
 ---
 
@@ -2899,7 +2899,7 @@ export function validateNamespace(namespace: string): void {
 - Supports container selection, namespace, context, timeout
 - Executes synchronously, returns command output
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - ✅ `k8s_exec_pod` tool via kubectl command generation
 - Returns kubectl command string for user to execute
 - Does NOT execute directly - provides command for manual execution
@@ -2909,9 +2909,9 @@ export function validateNamespace(namespace: string): void {
 
 **Correction:** Both use kubectl, but differently:
 - mcp-server-kubernetes: Executes kubectl and returns output
-- k8s-mcp-server: Returns kubectl command string (user must execute)
+- k8s-helm-mcp: Returns kubectl command string (user must execute)
 
-**Advantage:** mcp-server-kubernetes provides direct execution with output, while k8s-mcp-server provides flexible command generation for manual execution.
+**Advantage:** mcp-server-kubernetes provides direct execution with output, while k8s-helm-mcp provides flexible command generation for manual execution.
 
 ---
 
@@ -2925,7 +2925,7 @@ export function validateNamespace(namespace: string): void {
 - ❌ No plugin support
 - ❌ No lint/verify
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - ✅ Full Helm CLI coverage (20+ tools)
 - ✅ Repo add/list/remove/update
 - ✅ Chart search and show
@@ -2936,7 +2936,7 @@ export function validateNamespace(namespace: string): void {
 - ✅ Dependency management
 - ✅ Template rendering
 
-**Advantage:** `k8s-mcp-server-main` provides **complete Helm workflow** support.
+**Advantage:** `k8s-helm-mcp-main` provides **complete Helm workflow** support.
 
 ---
 
@@ -2950,17 +2950,17 @@ export function validateNamespace(namespace: string): void {
 - ✅ Sampling configuration
 - ✅ Auto-instrumentations
 
-**k8s-mcp-server-main:**
+**k8s-helm-mcp-main:**
 - ❌ No built-in observability
 - ❌ No tracing
 - ❌ No metrics
 - ❌ No structured logging
 
-**Advantage:** `mcp-server-kubernetes-main` wins for observability, but `k8s-mcp-server-main` can be enhanced with external monitoring.
+**Advantage:** `mcp-server-kubernetes-main` wins for observability, but `k8s-helm-mcp-main` can be enhanced with external monitoring.
 
 ---
 
-## Performance Optimization Recommendations for k8s-mcp-server-main
+## Performance Optimization Recommendations for k8s-helm-mcp-main
 
 ### 1. Enable Caching (Already Implemented)
 ```typescript
@@ -3050,7 +3050,7 @@ import { AppsV1Api } from "@kubernetes/client-node/gen/apps/v1";
 
 ### Benchmark Results
 
-| Operation | mcp-server-kubernetes | k8s-mcp-server (no cache) | k8s-mcp-server (with cache) |
+| Operation | mcp-server-kubernetes | k8s-helm-mcp (no cache) | k8s-helm-mcp (with cache) |
 |-----------|---------------------|--------------------------|---------------------------|
 | List Pods (50) | 120ms | 35ms | 3ms (cached) |
 | Get Pod Details | 95ms | 28ms | 2ms (cached) |
@@ -3062,26 +3062,26 @@ import { AppsV1Api } from "@kubernetes/client-node/gen/apps/v1";
 | **Average Latency** | **116ms** | **34ms** | **2.7ms** |
 | **Throughput** | **15 req/s** | **80 req/s** | **500 req/s** |
 
-**Conclusion:** `k8s-mcp-server-main` with caching is **40x faster** and **33x higher throughput**.
+**Conclusion:** `k8s-helm-mcp-main` with caching is **40x faster** and **33x higher throughput**.
 
 ---
 
 ## Feature Comparison Matrix
 
-| Feature Category | mcp-server-kubernetes | k8s-mcp-server | Winner |
+| Feature Category | mcp-server-kubernetes | k8s-helm-mcp | Winner |
 |-----------------|---------------------|----------------|--------|
 | **Performance** |
 | Cold Start | ✅ Fast (Bun) | ❌ Slower (Node) | mcp-server-kubernetes |
-| Request Latency | ❌ Higher (kubectl) | ✅ Lower (direct API) | k8s-mcp-server |
-| Caching | ❌ None | ✅ Response cache | k8s-mcp-server |
-| Throughput | ❌ Low (10-20/s) | ✅ High (50-100/s) | k8s-mcp-server |
-| Retry Logic | ❌ None | ✅ Exponential backoff | k8s-mcp-server |
+| Request Latency | ❌ Higher (kubectl) | ✅ Lower (direct API) | k8s-helm-mcp |
+| Caching | ❌ None | ✅ Response cache | k8s-helm-mcp |
+| Throughput | ❌ Low (10-20/s) | ✅ High (50-100/s) | k8s-helm-mcp |
+| Retry Logic | ❌ None | ✅ Exponential backoff | k8s-helm-mcp |
 | **Advanced Features** |
-| Tool Count | ❌ 25 tools | ✅ 100+ tools | k8s-mcp-server |
-| Helm Support | ❌ Basic | ✅ Complete | k8s-mcp-server |
-| Protection Modes | ❌ Basic | ✅ 3-level | k8s-mcp-server |
-| Error Classification | ❌ Basic | ✅ Advanced | k8s-mcp-server |
-| Input Validation | ❌ Basic Zod | ✅ Kubernetes spec | k8s-mcp-server |
+| Tool Count | ❌ 25 tools | ✅ 100+ tools | k8s-helm-mcp |
+| Helm Support | ❌ Basic | ✅ Complete | k8s-helm-mcp |
+| Protection Modes | ❌ Basic | ✅ 3-level | k8s-helm-mcp |
+| Error Classification | ❌ Basic | ✅ Advanced | k8s-helm-mcp |
+| Input Validation | ❌ Basic Zod | ✅ Kubernetes spec | k8s-helm-mcp |
 | Generic Kubectl | ✅ Available | ❌ None | mcp-server-kubernetes |
 | **Observability** |
 | OpenTelemetry | ✅ Built-in | ❌ None | mcp-server-kubernetes |
@@ -3093,13 +3093,13 @@ import { AppsV1Api } from "@kubernetes/client-node/gen/apps/v1";
 | Dependencies | ✅ Minimal | ❌ More | mcp-server-kubernetes |
 | Prompt Handlers | ✅ /k8s-diagnose | ❌ None | mcp-server-kubernetes |
 
-**Score:** k8s-mcp-server: 9 wins | mcp-server-kubernetes: 6 wins
+**Score:** k8s-helm-mcp: 9 wins | mcp-server-kubernetes: 6 wins
 
 ---
 
 ## Final Recommendation
 
-### For High Performance + Advanced Features: **k8s-mcp-server-main**
+### For High Performance + Advanced Features: **k8s-helm-mcp-main**
 
 **Reasons:**
 1. **3-7x lower latency** for typical operations
@@ -3127,7 +3127,7 @@ Choose this if you need:
 - Smaller bundle size for edge deployment
 - Simpler architecture for easier maintenance
 
-### Optimization Path for k8s-mcp-server-main
+### Optimization Path for k8s-helm-mcp-main
 
 To achieve maximum performance:
 1. ✅ **Caching** - Already implemented (95% latency reduction)
@@ -3147,6 +3147,6 @@ To achieve maximum performance:
 
 ## Conclusion
 
-**k8s-mcp-server-main** is the clear winner for **high performance + advanced features**. The direct API access, caching system, comprehensive tool coverage, and advanced error handling provide significant performance advantages (3-7x faster latency, 5-10x higher throughput) that far outweigh the slower cold start and larger bundle size.
+**k8s-helm-mcp-main** is the clear winner for **high performance + advanced features**. The direct API access, caching system, comprehensive tool coverage, and advanced error handling provide significant performance advantages (3-7x faster latency, 5-10x higher throughput) that far outweigh the slower cold start and larger bundle size.
 
-The few missing features (OpenTelemetry, SSE transport) can be added as optimizations without sacrificing the core performance advantages. For production use cases requiring both speed and feature completeness, **k8s-mcp-server-main** is the recommended choice.
+The few missing features (OpenTelemetry, SSE transport) can be added as optimizations without sacrificing the core performance advantages. For production use cases requiring both speed and feature completeness, **k8s-helm-mcp-main** is the recommended choice.

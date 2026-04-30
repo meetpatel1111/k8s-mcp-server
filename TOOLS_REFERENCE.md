@@ -1,6 +1,6 @@
 # K8s MCP Server - Complete Tool Reference
 
-**Version: 0.14.0** | **Total Tools: 262+**
+**Version: 0.19.0** | **Total Tools: 262+**
 
 This document provides comprehensive reference for all tools in the Kubernetes MCP Server, including tool catalogs, kubectl mappings, and natural language patterns.
 
@@ -747,4 +747,4 @@ All tools starting with `k8s_delete_`, `k8s_bulk_delete_`, `k8s_helm_uninstall`,
 
 ---
 
-*Generated for K8s MCP Server v1.5.2*
+*Generated for k8s-helm-mcp v0.19.0*
