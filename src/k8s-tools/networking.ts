@@ -81,10 +81,10 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
           validateResourceName(name, "service");
           const coreApi = k8sClient.getCoreV1Api();
           const [svcResult, endpointsResult] = await Promise.all([
-            coreApi.readNamespacedService(name, namespace || "default"),
-            coreApi.readNamespacedEndpoints(name, namespace || "default").catch(() => null),
+            coreApi.readNamespacedService({ name, namespace: namespace || "default" }),
+            coreApi.readNamespacedEndpoints({ name, namespace: namespace || "default" }).catch(() => null),
           ]);
-          const svc = svcResult.body;
+          const svc = svcResult;
 
           return {
             name: svc.metadata?.name,
@@ -112,7 +112,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
                 hostname: lb.hostname,
               })),
             },
-            endpoints: endpointsResult?.body?.subsets?.map((subset: k8s.V1EndpointSubset) => ({
+            endpoints: endpointsResult?.subsets?.map((subset: k8s.V1EndpointSubset) => ({
               addresses: subset.addresses?.map((a: k8s.V1EndpointAddress) => ({
                 ip: a.ip,
                 hostname: a.hostname,
@@ -163,18 +163,18 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
           validateResourceName(name, "service");
           const coreApi = k8sClient.getCoreV1Api();
           const [service, endpoints] = await Promise.all([
-            coreApi.readNamespacedService(name, namespace || "default"),
-            coreApi.readNamespacedEndpoints(name, namespace || "default").catch(() => null),
+            coreApi.readNamespacedService({ name, namespace: namespace || "default" }),
+            coreApi.readNamespacedEndpoints({ name, namespace: namespace || "default" }).catch(() => null),
           ]);
 
           return {
             service: {
-              name: service.body.metadata?.name,
-              namespace: service.body.metadata?.namespace,
-              selector: service.body.spec?.selector,
-              ports: service.body.spec?.ports,
+              name: service.metadata?.name,
+              namespace: service.metadata?.namespace,
+              selector: service.spec?.selector,
+              ports: service.spec?.ports,
             },
-            endpoints: endpoints?.body?.subsets?.map((subset: k8s.V1EndpointSubset) => ({
+            endpoints: endpoints?.subsets?.map((subset: k8s.V1EndpointSubset) => ({
               addresses: subset.addresses?.map((a: k8s.V1EndpointAddress) => ({
                 ip: a.ip,
                 hostname: a.hostname,
@@ -191,7 +191,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
                 protocol: p.protocol,
               })),
             })) || [],
-            totalEndpoints: endpoints?.body?.subsets?.reduce((sum: number, s: k8s.V1EndpointSubset) => 
+            totalEndpoints: endpoints?.subsets?.reduce((sum: number, s: k8s.V1EndpointSubset) => 
               sum + (s.addresses?.length || 0), 0) || 0,
           };
         } catch (error) {
@@ -278,11 +278,11 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
         try {
           const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
           const response = namespace
-            ? await netApi.listNamespacedNetworkPolicy(namespace)
+            ? await netApi.listNamespacedNetworkPolicy({ namespace })
             : await netApi.listNetworkPolicyForAllNamespaces();
           
           return {
-            networkPolicies: response.body.items.map((np: k8s.V1NetworkPolicy) => ({
+            networkPolicies: response.items.map((np: k8s.V1NetworkPolicy) => ({
               name: np.metadata?.name,
               namespace: np.metadata?.namespace,
               podSelector: np.spec?.podSelector,
@@ -329,8 +329,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
         try {
           validateResourceName(name, "ingress");
           const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
-          const result = await netApi.readNamespacedIngress(name, namespace || "default");
-          const ing = result.body;
+          const ing = await netApi.readNamespacedIngress({ name, namespace: namespace || "default" });
 
           return {
             name: ing.metadata?.name,
@@ -396,8 +395,8 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
         try {
           validateResourceName(name, "networkpolicy");
           const netApi = (k8sClient as any).kc.makeApiClient(k8s.NetworkingV1Api);
-          const result = await netApi.readNamespacedNetworkPolicy(name, namespace || "default");
-          const np = result.body;
+          const result = await netApi.readNamespacedNetworkPolicy({ name, namespace: namespace || "default" });
+          const np = result;
 
           return {
             name: np.metadata?.name,
@@ -405,7 +404,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             podSelector: np.spec?.podSelector,
             policyTypes: np.spec?.policyTypes,
             ingress: np.spec?.ingress?.map((rule: k8s.V1NetworkPolicyIngressRule) => ({
-              from: rule.from?.map((from: k8s.V1NetworkPolicyPeer) => ({
+              from: (rule as any).from?.map((from: k8s.V1NetworkPolicyPeer) => ({
                 podSelector: from.podSelector,
                 namespaceSelector: from.namespaceSelector,
                 ipBlock: from.ipBlock ? {
@@ -491,24 +490,24 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
         };
 
         try {
-          await coreApi.createNamespacedPod(ns, pod);
+          await coreApi.createNamespacedPod({ namespace: ns, body: pod });
           
           // Wait for pod completion (simplified - in production use watch)
           await new Promise((resolve) => setTimeout(resolve, 5000));
           
-          const podStatus = await coreApi.readNamespacedPod(testPodName, ns);
-          const logs = await coreApi.readNamespacedPodLog(testPodName, ns);
+          const podStatus = await coreApi.readNamespacedPod({ name: testPodName, namespace: ns });
+          const logs = await coreApi.readNamespacedPodLog({ name: testPodName, namespace: ns });
           
           // Clean up
-          await coreApi.deleteNamespacedPod(testPodName, ns);
+          await coreApi.deleteNamespacedPod({ name: testPodName, namespace: ns });
           
-          const succeeded = podStatus.body.status?.phase === "Succeeded";
+          const succeeded = podStatus.status?.phase === "Succeeded";
           
           return {
             hostname,
             namespace: ns,
             resolved: succeeded,
-            logs: logs.body,
+            logs: logs,
             message: succeeded 
               ? `DNS resolution for ${hostname} succeeded`
               : `DNS resolution for ${hostname} failed`,
@@ -516,7 +515,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
         } catch (error) {
           // Clean up on error
           try {
-            await coreApi.deleteNamespacedPod(testPodName, ns);
+            await coreApi.deleteNamespacedPod({ name: testPodName, namespace: ns });
           } catch {}
           
           const context: ErrorContext = { operation: "k8s_test_dns", resource: hostname, namespace: ns };
@@ -551,15 +550,15 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
           const coreApi = k8sClient.getCoreV1Api();
           
           const [services, pods] = await Promise.all([
-            coreApi.listNamespacedService(ns),
-            coreApi.listNamespacedPod(ns),
+            coreApi.listNamespacedService({ namespace: ns }),
+            coreApi.listNamespacedPod({ namespace: ns }),
           ]);
 
-          const topology = services.body.items.map((svc: k8s.V1Service) => {
+          const topology = services.items.map((svc: k8s.V1Service) => {
             const selector = svc.spec?.selector || {};
             
             // Find matching pods
-            const matchingPods = pods.body.items.filter((pod: k8s.V1Pod) => {
+            const matchingPods = pods.items.filter((pod: k8s.V1Pod) => {
               const labels = pod.metadata?.labels || {};
               return Object.entries(selector).every(([key, value]) => labels[key] === value);
             });
@@ -639,7 +638,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await coreApi.deleteNamespacedService(name, ns, undefined, options);
+          await coreApi.deleteNamespacedService({ name, namespace: ns, ...options });
           
           return {
             success: true,
@@ -697,7 +696,7 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await netApi.deleteNamespacedIngress(name, ns, undefined, options);
+          await netApi.deleteNamespacedIngress({ name, namespace: ns, ...options });
           
           return {
             success: true,
@@ -808,16 +807,16 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             },
           };
           
-          const result = await coreApi.createNamespacedService(ns, service);
+          const result = await coreApi.createNamespacedService({ namespace: ns, body: service }, {});
           
           return {
             success: true,
             message: `Service ${name} created in namespace ${ns}`,
             service: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              type: result.body.spec?.type,
-              clusterIP: result.body.spec?.clusterIP,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              type: result.spec?.type,
+              clusterIP: result.spec?.clusterIP,
             },
           };
         } catch (error) {
@@ -903,19 +902,19 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
           
           switch (resource.toLowerCase()) {
             case "deployment":
-              const deploy = await appsApi.readNamespacedDeployment(name, ns);
-              selector = deploy.body.spec?.selector?.matchLabels || {};
+              const deploy = await appsApi.readNamespacedDeployment({ name, namespace: ns }, {});
+              selector = deploy.spec?.selector?.matchLabels || {};
               break;
             case "pod":
-              const pod = await coreApi.readNamespacedPod(name, ns);
-              selector = pod.body.metadata?.labels || {};
+              const pod = await coreApi.readNamespacedPod({ name, namespace: ns }, {});
+              selector = pod.metadata?.labels || {};
               // Remove pod-specific labels that shouldn't be used as selectors
               delete selector["controller-uid"];
               delete selector["job-name"];
               break;
             case "replicaset":
-              const rs = await appsApi.readNamespacedReplicaSet(name, ns);
-              selector = rs.body.spec?.selector?.matchLabels || {};
+              const rs = await appsApi.readNamespacedReplicaSet({ name, namespace: ns }, {});
+              selector = rs.spec?.selector?.matchLabels || {};
               break;
             default:
               return {
@@ -951,16 +950,16 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             },
           };
           
-          const result = await coreApi.createNamespacedService(ns, service);
+          const result = await coreApi.createNamespacedService({ namespace: ns, body: service }, {});
           
           return {
             success: true,
             message: `Exposed ${resource}/${name} as service ${svcName}`,
             service: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              type: result.body.spec?.type,
-              clusterIP: result.body.spec?.clusterIP,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              type: result.spec?.type,
+              clusterIP: result.spec?.clusterIP,
               selector,
               ports: [{ port, targetPort: targetPort || port }],
             },
@@ -1080,16 +1079,16 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             },
           };
           
-          const result = await netApi.createNamespacedIngress(ns, ingress);
+          const result = await netApi.createNamespacedIngress({ namespace: ns, body: ingress }, {});
           
           return {
             success: true,
             message: `Ingress ${name} created in namespace ${ns}`,
             ingress: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              rules: result.body.spec?.rules?.length,
-              tls: result.body.spec?.tls?.length || 0,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              rules: result.spec?.rules?.length,
+              tls: result.spec?.tls?.length || 0,
             },
           };
         } catch (error) {
@@ -1187,16 +1186,16 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
             },
           };
           
-          const result = await netApi.createNamespacedNetworkPolicy(ns, networkPolicy);
+          const result = await netApi.createNamespacedNetworkPolicy({ namespace: ns, body: networkPolicy }, {});
           
           return {
             success: true,
             message: `NetworkPolicy ${name} created in namespace ${ns}`,
             networkPolicy: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              podSelector: result.body.spec?.podSelector?.matchLabels,
-              policyTypes: result.body.spec?.policyTypes,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              podSelector: result.spec?.podSelector?.matchLabels,
+              policyTypes: result.spec?.policyTypes,
             },
           };
         } catch (error) {
@@ -1247,14 +1246,14 @@ export function registerNetworkingTools(k8sClient: K8sClient): { tool: Tool; han
           
           if (service && namespace) {
             // Get specific endpoints for a service
-            const ep = await coreApi.readNamespacedEndpoints(service, namespace);
-            endpoints = [ep.body];
+            const ep = await coreApi.readNamespacedEndpoints({ name: service, namespace });
+            endpoints = [ep];
           } else if (namespace) {
-            const result = await coreApi.listNamespacedEndpoints(namespace);
-            endpoints = result.body?.items || [];
+            const result = await coreApi.listNamespacedEndpoints({ namespace });
+            endpoints = result.items || [];
           } else {
             const result = await coreApi.listEndpointsForAllNamespaces();
-            endpoints = result.body?.items || [];
+            endpoints = result.items || [];
           }
           
           return {

@@ -2,7 +2,7 @@
 
 This document provides auto-generated API documentation for all Kubernetes and Helm tools.
 
-**Generated:** 2026-05-01T01:18:00.000Z
+**Generated:** 2026-04-30T20:27:22.076Z
 
 ## Summary
 
@@ -211,6 +211,7 @@ Export a resource as YAML
 - **kind** (string, required): Resource kind (e.g., Pod, Deployment, Service)
 - **name** (string, required): Resource name
 - **namespace** (stringoptional) (default: "default"): Namespace (if namespaced resource)
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in exported YAML
 
 ### k8s_validate_manifest
 
@@ -229,6 +230,7 @@ Get raw YAML of a resource
 - **kind** (string, required): Resource kind
 - **name** (string, required): Resource name
 - **namespace** (stringoptional) (default: "default"): Namespace
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in exported YAML
 
 ### k8s_create_namespace
 
@@ -452,6 +454,7 @@ Search for patterns in pod logs across multiple pods. Useful for finding errors,
 - **labelSelector** (stringoptional): Label selector to filter pods (e.g., app=nginx)
 - **tailLines** (numberoptional) (default: 500): Number of recent log lines to search per pod
 - **maxPods** (numberoptional) (default: 20): Maximum number of pods to search
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in matched log lines (passwords, tokens, emails, IPs)
 
 ### k8s_resource_comparison
 
@@ -972,6 +975,7 @@ Get logs from a pod, deployment, statefulset, daemonset, job, or service. Suppor
 - **analyze** (booleanoptional) (default: false): Enable AI analysis mode - returns statistics, patterns, and insights without full log content
 - **patterns** (arrayoptional): Custom patterns to search for and count (e.g., ['timeout', 'connection refused', 'database'])
   Items: string
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in logs (passwords, tokens, emails, IPs)
 
 ### k8s_delete_pod
 
@@ -991,6 +995,7 @@ Get full YAML description of a pod
 
 - **name** (string, required): Name of the pod
 - **namespace** (stringoptional) (default: "default"): Namespace of the pod
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in pod spec (env vars, command args)
 
 ### k8s_get_pod_events
 
@@ -1208,6 +1213,7 @@ Get detailed ConfigMap data
 
 - **name** (string, required): Name of the ConfigMap
 - **namespace** (stringoptional) (default: "default"): Namespace of the ConfigMap
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in ConfigMap data
 
 ### k8s_get_rbac_summary
 
@@ -1575,6 +1581,7 @@ Execute command in a pod, or first pod of a deployment/service. Supports format 
 - **tty** (booleanoptional) (default: false): Allocate TTY (like kubectl exec -t)
 - **stdin** (booleanoptional) (default: false): Pass stdin to container (like kubectl exec -i)
 - **mode** (stringoptional) (default: "direct") [enum: direct, websocket]: Execution mode: 'direct' executes command and returns output, 'websocket' returns WebSocket URL for interactive session
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in command output (passwords, tokens, emails, IPs)
 
 ### k8s_port_forward
 
@@ -2146,6 +2153,7 @@ Execute arbitrary kubectl command (fallback for unsupported operations). Use wit
 - **command** (string, required): kubectl command to execute (without 'kubectl' prefix, e.g., 'get pods -o wide')
 - **namespace** (stringoptional): Namespace to use (optional, defaults to current context)
 - **context** (stringoptional): Kubeconfig context to use (optional)
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in output (passwords, tokens, emails, IPs)
 
 ### k8s_raw_api_query
 
@@ -2541,6 +2549,7 @@ Locally render templates for a Helm chart without installing
 - **password** (stringoptional): Chart repository password
 - **keyring** (stringoptional): Location of public keys for verification (default: ~/.gnupg/pubring.gpg)
 - **verify** (booleanoptional) (default: false): Verify the package before using it
+- **scrub** (booleanoptional) (default: false): Mask potential secrets in rendered templates (passwords, tokens, emails, IPs)
 
 ## Helm Dependency Management
 
@@ -2768,6 +2777,7 @@ Get the values of a Helm release (like helm get values)
 - **revision** (numberoptional): Specific revision (default: current)
 - **allValues** (booleanoptional) (default: false): Show all computed values including defaults
 - **output** (stringoptional) [enum: table, json, yaml]: Prints the output in the specified format (table, json, yaml)
+- **scrubSecrets** (booleanoptional) (default: false): Mask potential secrets in values output (passwords, tokens, keys)
 
 ## Helm Release History
 

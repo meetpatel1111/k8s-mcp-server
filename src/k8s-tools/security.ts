@@ -140,20 +140,20 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       },
       handler: async ({ namespace }: { namespace?: string }) => {
         try {
-          const rbacApi = (k8sClient as any).kc.makeApiClient(k8s.RbacAuthorizationV1Api);
+          const rbacApi = k8sClient.getRbacV1Api();
           const response = namespace
-            ? await rbacApi.listNamespacedRoleBinding(namespace)
-            : await rbacApi.listRoleBindingForAllNamespaces();
+            ? await rbacApi.listNamespacedRoleBinding({ namespace })
+            : await rbacApi.listRoleBindingForAllNamespaces({});
           
           return {
-            roleBindings: response.body.items.map((rb: k8s.V1RoleBinding) => ({
+            roleBindings: response.items.map((rb: k8s.V1RoleBinding) => ({
               name: rb.metadata?.name,
               namespace: rb.metadata?.namespace,
               roleRef: {
                 kind: rb.roleRef?.kind,
                 name: rb.roleRef?.name,
               },
-              subjects: rb.subjects?.map((s: k8s.V1Subject) => ({
+              subjects: rb.subjects?.map((s: k8s.RbacV1Subject) => ({
                 kind: s.kind,
                 name: s.name,
                 namespace: s.namespace,
@@ -184,17 +184,17 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       },
       handler: async () => {
         try {
-          const rbacApi = (k8sClient as any).kc.makeApiClient(k8s.RbacAuthorizationV1Api);
-          const response = await rbacApi.listClusterRoleBinding();
+          const rbacApi = k8sClient.getRbacV1Api();
+          const response = await rbacApi.listClusterRoleBinding({});
           
           return {
-            clusterRoleBindings: response.body.items.map((crb: k8s.V1ClusterRoleBinding) => ({
+            clusterRoleBindings: response.items.map((crb: k8s.V1ClusterRoleBinding) => ({
               name: crb.metadata?.name,
               roleRef: {
                 kind: crb.roleRef?.kind,
                 name: crb.roleRef?.name,
               },
-              subjects: crb.subjects?.map((s: k8s.V1Subject) => ({
+              subjects: crb.subjects?.map((s: k8s.RbacV1Subject) => ({
                 kind: s.kind,
                 name: s.name,
                 namespace: s.namespace,
@@ -335,8 +335,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "secret");
           const coreApi = k8sClient.getCoreV1Api();
-          const result = await coreApi.readNamespacedSecret(name, namespace || "default");
-          const secret = result.body;
+          const secret = await coreApi.readNamespacedSecret({ name, namespace: namespace || "default" });
 
           const data = secret.data || {};
           const decodedData = decode
@@ -393,8 +392,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
         try {
           validateResourceName(name, "serviceaccount");
           const coreApi = k8sClient.getCoreV1Api();
-          const result = await coreApi.readNamespacedServiceAccount(name, namespace || "default");
-          const sa = result.body;
+          const sa = await coreApi.readNamespacedServiceAccount({ name, namespace: namespace || "default" });
 
           return {
             name: sa.metadata?.name,
@@ -446,9 +444,8 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       handler: async ({ name, namespace }: { name: string; namespace?: string }) => {
         try {
           validateResourceName(name, "role");
-          const rbacApi = (k8sClient as any).kc.makeApiClient(k8s.RbacAuthorizationV1Api);
-          const result = await rbacApi.readNamespacedRole(name, namespace || "default");
-          const role = result.body;
+          const rbacApi = k8sClient.getRbacV1Api();
+          const role = await rbacApi.readNamespacedRole({ name, namespace: namespace || "default" });
 
           return {
             name: role.metadata?.name,
@@ -495,9 +492,8 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       handler: async ({ name }: { name: string }) => {
         try {
           validateResourceName(name, "clusterrole");
-          const rbacApi = (k8sClient as any).kc.makeApiClient(k8s.RbacAuthorizationV1Api);
-          const result = await rbacApi.readClusterRole(name);
-          const cr = result.body;
+          const rbacApi = k8sClient.getRbacV1Api();
+          const cr = await rbacApi.readClusterRole({ name });
 
           return {
             name: cr.metadata?.name,
@@ -549,9 +545,8 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       handler: async ({ name, namespace }: { name: string; namespace?: string }) => {
         try {
           validateResourceName(name, "rolebinding");
-          const rbacApi = (k8sClient as any).kc.makeApiClient(k8s.RbacAuthorizationV1Api);
-          const result = await rbacApi.readNamespacedRoleBinding(name, namespace || "default");
-          const rb = result.body;
+          const rbacApi = k8sClient.getRbacV1Api();
+          const rb = await rbacApi.readNamespacedRoleBinding({ name, namespace: namespace || "default" });
 
           return {
             name: rb.metadata?.name,
@@ -561,7 +556,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
               name: rb.roleRef?.name,
               apiGroup: rb.roleRef?.apiGroup,
             },
-            subjects: rb.subjects?.map((s: k8s.V1Subject) => ({
+            subjects: rb.subjects?.map((s: k8s.RbacV1Subject) => ({
               kind: s.kind,
               name: s.name,
               namespace: s.namespace,
@@ -602,9 +597,8 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       handler: async ({ name }: { name: string }) => {
         try {
           validateResourceName(name, "clusterrolebinding");
-          const rbacApi = (k8sClient as any).kc.makeApiClient(k8s.RbacAuthorizationV1Api);
-          const result = await rbacApi.readClusterRoleBinding(name);
-          const crb = result.body;
+          const rbacApi = k8sClient.getRbacV1Api();
+          const crb = await rbacApi.readClusterRoleBinding({ name });
 
           return {
             name: crb.metadata?.name,
@@ -613,7 +607,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
               name: crb.roleRef?.name,
               apiGroup: crb.roleRef?.apiGroup,
             },
-            subjects: crb.subjects?.map((s: k8s.V1Subject) => ({
+            subjects: crb.subjects?.map((s: k8s.RbacV1Subject) => ({
               kind: s.kind,
               name: s.name,
               namespace: s.namespace,
@@ -662,9 +656,9 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
       },
       handler: async ({ name, namespace, scrub }: { name: string; namespace?: string; scrub?: boolean }) => {
         const coreApi = k8sClient.getCoreV1Api();
-        const cm = await coreApi.readNamespacedConfigMap(name, namespace || "default");
+        const cm = await coreApi.readNamespacedConfigMap({ name, namespace: namespace || "default" });
         
-        let data = cm.body.data;
+        let data = cm.data;
         if (scrub && data) {
           data = Object.fromEntries(
             Object.entries(data).map(([k, v]) => [k, scrubSensitiveData(v || "")])
@@ -672,13 +666,13 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
         }
         
         return {
-          name: cm.body.metadata?.name,
-          namespace: cm.body.metadata?.namespace,
+          name: cm.metadata?.name,
+          namespace: cm.metadata?.namespace,
           data,
           scrubbed: scrub || false,
-          binaryData: cm.body.binaryData ? "<binary data present>" : null,
-          immutable: cm.body.immutable,
-          age: cm.body.metadata?.creationTimestamp,
+          binaryData: cm.binaryData ? "<binary data present>" : null,
+          immutable: cm.immutable,
+          age: cm.metadata?.creationTimestamp,
         };
       },
     },
@@ -711,23 +705,23 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
         
         // Get all role bindings
         const [roleBindings, clusterRoleBindings] = await Promise.all([
-          rbacApi.listRoleBindingForAllNamespaces(),
-          rbacApi.listClusterRoleBinding(),
+          rbacApi.listRoleBindingForAllNamespaces({}),
+          rbacApi.listClusterRoleBinding({}),
         ]);
 
         // Find bindings for this subject
-        const subjectFilter = (s: k8s.V1Subject) => {
+        const subjectFilter = (s: k8s.RbacV1Subject) => {
           if (s.kind !== kind) return false;
           if (s.name !== name) return false;
           if (kind === "ServiceAccount" && s.namespace !== namespace) return false;
           return true;
         };
 
-        const matchingRoleBindings = roleBindings.body.items.filter((rb: k8s.V1RoleBinding) => 
+        const matchingRoleBindings = roleBindings.items.filter((rb: k8s.V1RoleBinding) => 
           rb.subjects?.some(subjectFilter)
         );
         
-        const matchingClusterRoleBindings = clusterRoleBindings.body.items.filter((crb: k8s.V1ClusterRoleBinding) => 
+        const matchingClusterRoleBindings = clusterRoleBindings.items.filter((crb: k8s.V1ClusterRoleBinding) => 
           crb.subjects?.some(subjectFilter)
         );
 
@@ -834,7 +828,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await coreApi.deleteNamespacedServiceAccount(name, ns, undefined, options);
+          await coreApi.deleteNamespacedServiceAccount({ name, namespace: ns });
           
           return {
             success: true,
@@ -892,7 +886,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await rbacApi.deleteNamespacedRole(name, ns, undefined, options);
+          await rbacApi.deleteNamespacedRole({ name, namespace: ns });
           
           return {
             success: true,
@@ -943,7 +937,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await rbacApi.deleteClusterRole(name, undefined, options);
+          await rbacApi.deleteClusterRole({ name });
           
           return {
             success: true,
@@ -1001,7 +995,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await rbacApi.deleteNamespacedRoleBinding(name, ns, undefined, options);
+          await rbacApi.deleteNamespacedRoleBinding({ name, namespace: ns });
           
           return {
             success: true,
@@ -1052,7 +1046,7 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             options.gracePeriodSeconds = gracePeriodSeconds;
           }
           
-          await rbacApi.deleteClusterRoleBinding(name, undefined, options);
+          await rbacApi.deleteClusterRoleBinding({ name });
           
           return {
             success: true,
@@ -1128,15 +1122,15 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             automountServiceAccountToken: automountToken !== false,
           };
           
-          const result = await coreApi.createNamespacedServiceAccount(ns, serviceAccount);
+          const result = await coreApi.createNamespacedServiceAccount({ namespace: ns, body: serviceAccount });
           
           return {
             success: true,
             message: `ServiceAccount ${name} created in namespace ${ns}`,
             serviceAccount: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              automountServiceAccountToken: result.body.automountServiceAccountToken,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              automountServiceAccountToken: result.automountServiceAccountToken,
             },
           };
         } catch (error) {
@@ -1222,15 +1216,15 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             })),
           };
           
-          const result = await rbacApi.createNamespacedRole(ns, role);
+          const result = await rbacApi.createNamespacedRole({ namespace: ns, body: role });
           
           return {
             success: true,
             message: `Role ${name} created in namespace ${ns}`,
             role: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              rules: result.body.rules?.length,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              rules: result.rules?.length,
             },
           };
         } catch (error) {
@@ -1327,16 +1321,16 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             })),
           };
           
-          const result = await rbacApi.createNamespacedRoleBinding(ns, roleBinding);
+          const result = await rbacApi.createNamespacedRoleBinding({ namespace: ns, body: roleBinding });
           
           return {
             success: true,
             message: `RoleBinding ${name} created in namespace ${ns}`,
             roleBinding: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              role: result.body.roleRef?.name,
-              subjects: result.body.subjects?.length,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              role: result.roleRef?.name,
+              subjects: result.subjects?.length,
             },
           };
         } catch (error) {
@@ -1420,14 +1414,14 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             })),
           };
           
-          const result = await rbacApi.createClusterRole(clusterRole);
+          const result = await rbacApi.createClusterRole({ body: clusterRole });
           
           return {
             success: true,
             message: `ClusterRole ${name} created`,
             clusterRole: {
-              name: result.body.metadata?.name,
-              rules: result.body.rules?.length,
+              name: result.metadata?.name,
+              rules: result.rules?.length,
             },
           };
         } catch (error) {
@@ -1509,15 +1503,15 @@ export function registerSecurityTools(k8sClient: K8sClient): { tool: Tool; handl
             })),
           };
           
-          const result = await rbacApi.createClusterRoleBinding(clusterRoleBinding);
+          const result = await rbacApi.createClusterRoleBinding({ body: clusterRoleBinding });
           
           return {
             success: true,
             message: `ClusterRoleBinding ${name} created`,
             clusterRoleBinding: {
-              name: result.body.metadata?.name,
-              clusterRole: result.body.roleRef?.name,
-              subjects: result.body.subjects?.length,
+              name: result.metadata?.name,
+              clusterRole: result.roleRef?.name,
+              subjects: result.subjects?.length,
             },
           };
         } catch (error) {

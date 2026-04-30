@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.19.1 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.20.0 logo">
 </p>
 
 # k8s-helm-mcp
@@ -7,11 +7,12 @@
 [![npm version](https://badge.fury.io/js/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node.js Version](https://img.shields.io/node/v/k8s-helm-mcp.svg)](https://nodejs.org/)
+[![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.19.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.20.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
-> **Status:** This package works brilliantly with **Claude Code**! You can add it directly using `claude mcp add kubernetes npx k8s-helm-mcp`.
+> **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
 
 > [!NOTE]
 > **SSE Feature:** The SSE transport feature is currently in development and should be considered experimental.
@@ -286,7 +287,7 @@ npm start
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "npx",
       "args": ["-y", "k8s-helm-mcp"]
     }
@@ -298,7 +299,7 @@ npm start
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["/path/to/k8s-helm-mcp/dist/index.js"]
     }
@@ -310,7 +311,7 @@ npm start
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["C:\\path\\to\\k8s-helm-mcp\\dist\\index.js"]
     }
@@ -329,7 +330,7 @@ Add to your `mcpServers` config:
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "npx",
       "args": ["-y", "k8s-helm-mcp"],
       "description": "Kubernetes cluster management"
@@ -346,7 +347,7 @@ Add server with command:
 #### Option 4: Claude Code
 
 ```bash
-claude mcp add kubernetes npx k8s-helm-mcp
+claude mcp add k8s-helm-mcp npx k8s-helm-mcp
 ```
 
 #### Option 5: Web Deployment (SSE Transport)
@@ -449,7 +450,7 @@ To integrate this server, add the configuration below to your `claude_desktop_co
 ```json
 {
   "mcpServers": {
-    "k8s": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["/path/to/k8s-mcp/dist/index.js"]
     }
@@ -507,7 +508,7 @@ Open Claude Desktop → Settings → Developer → Edit Config, then add:
 ```json
 {
   "mcpServers": {
-    "kubernetes": {
+    "k8s-helm-mcp": {
       "command": "node",
       "args": ["PATH/TO/k8s-helm-mcp/dist/index.js"]
     }

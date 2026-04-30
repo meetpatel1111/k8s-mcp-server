@@ -93,11 +93,11 @@ export function registerMonitoringTools(k8sClient: K8sClient): { tool: Tool; han
         try {
           const coreApi = k8sClient.getCoreV1Api();
           const response = namespace
-            ? await coreApi.listNamespacedResourceQuota(namespace)
+            ? await coreApi.listNamespacedResourceQuota({ namespace })
             : await coreApi.listResourceQuotaForAllNamespaces();
           
           return {
-            resourceQuotas: response.body.items.map((rq: k8s.V1ResourceQuota) => ({
+            resourceQuotas: response.items.map((rq: k8s.V1ResourceQuota) => ({
               name: rq.metadata?.name,
               namespace: rq.metadata?.namespace,
               spec: rq.spec?.hard,
@@ -137,11 +137,11 @@ export function registerMonitoringTools(k8sClient: K8sClient): { tool: Tool; han
         try {
           const coreApi = k8sClient.getCoreV1Api();
           const response = namespace
-            ? await coreApi.listNamespacedLimitRange(namespace)
+            ? await coreApi.listNamespacedLimitRange({ namespace })
             : await coreApi.listLimitRangeForAllNamespaces();
           
           return {
-            limitRanges: response.body.items.map((lr: k8s.V1LimitRange) => ({
+            limitRanges: response.items.map((lr: k8s.V1LimitRange) => ({
               name: lr.metadata?.name,
               namespace: lr.metadata?.namespace,
               limits: lr.spec?.limits?.map((l: k8s.V1LimitRangeItem) => ({
@@ -698,15 +698,15 @@ export function registerMonitoringTools(k8sClient: K8sClient): { tool: Tool; han
             },
           };
           
-          const result = await coreApi.createNamespacedResourceQuota(ns, resourceQuota);
+          const result = await coreApi.createNamespacedResourceQuota({ namespace: ns, body: resourceQuota }, {});
           
           return {
             success: true,
             message: `ResourceQuota ${name} created in namespace ${ns}`,
             resourceQuota: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              hard: result.body.spec?.hard,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              hard: result.spec?.hard,
             },
           };
         } catch (error) {
@@ -805,15 +805,15 @@ export function registerMonitoringTools(k8sClient: K8sClient): { tool: Tool; han
             },
           };
           
-          const result = await coreApi.createNamespacedLimitRange(ns, limitRange);
+          const result = await coreApi.createNamespacedLimitRange({ namespace: ns, body: limitRange }, {});
           
           return {
             success: true,
             message: `LimitRange ${name} created in namespace ${ns}`,
             limitRange: {
-              name: result.body.metadata?.name,
-              namespace: result.body.metadata?.namespace,
-              limits: result.body.spec?.limits?.length,
+              name: result.metadata?.name,
+              namespace: result.metadata?.namespace,
+              limits: result.spec?.limits?.length,
             },
           };
         } catch (error) {
@@ -859,15 +859,12 @@ export function registerMonitoringTools(k8sClient: K8sClient): { tool: Tool; han
           const coreApi = k8sClient.getCoreV1Api();
           const ns = namespace || "default";
           
-          await coreApi.deleteNamespacedLimitRange(
-            name,
-            ns,
-            undefined,
-            gracePeriodSeconds?.toString(),
-            undefined,
-            undefined,
-            "Foreground"
-          );
+          await coreApi.deleteNamespacedLimitRange({ 
+            name, 
+            namespace: ns,
+            gracePeriodSeconds: gracePeriodSeconds,
+            propagationPolicy: "Foreground"
+          }, {});
           
           return {
             success: true,
@@ -916,15 +913,12 @@ export function registerMonitoringTools(k8sClient: K8sClient): { tool: Tool; han
           const coreApi = k8sClient.getCoreV1Api();
           const ns = namespace || "default";
           
-          await coreApi.deleteNamespacedResourceQuota(
-            name,
-            ns,
-            undefined,
-            gracePeriodSeconds?.toString(),
-            undefined,
-            undefined,
-            "Foreground"
-          );
+          await coreApi.deleteNamespacedResourceQuota({ 
+            name, 
+            namespace: ns,
+            gracePeriodSeconds: gracePeriodSeconds,
+            propagationPolicy: "Foreground"
+          }, {});
           
           return {
             success: true,

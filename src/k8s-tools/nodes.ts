@@ -221,14 +221,14 @@ export function registerNodeTools(k8sClient: K8sClient): { tool: Tool; handler: 
 
           // Get all pods on the node
           const coreApi = k8sClient.getCoreV1Api();
-          const pods = await coreApi.listPodForAllNamespaces(
-            undefined, undefined, undefined, `spec.nodeName=${name}`
-          );
+          const pods = await coreApi.listPodForAllNamespaces({
+            fieldSelector: `spec.nodeName=${name}`
+          });
 
           const deletedPods: string[] = [];
           const skippedPods: string[] = [];
 
-          for (const pod of pods.body.items) {
+          for (const pod of pods.items) {
             const podName = pod.metadata?.name || "";
             const namespace = pod.metadata?.namespace || "";
 
@@ -246,13 +246,11 @@ export function registerNodeTools(k8sClient: K8sClient): { tool: Tool; handler: 
 
             // Delete the pod
             try {
-              await coreApi.deleteNamespacedPod(
-                podName,
+              await coreApi.deleteNamespacedPod({
+                name: podName,
                 namespace,
-                undefined,
-                gracePeriodSeconds as any,
-                force as any
-              );
+                gracePeriodSeconds,
+              });
               deletedPods.push(`${namespace}/${podName}`);
             } catch (error) {
               skippedPods.push(`${namespace}/${podName} (delete failed)`);
