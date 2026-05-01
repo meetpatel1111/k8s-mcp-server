@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.20.0 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.21.0 logo">
 </p>
 
 # k8s-helm-mcp
@@ -9,7 +9,7 @@
 [![Node.js Version](https://img.shields.io/node/v/k8s-helm-mcp.svg)](https://nodejs.org/)
 [![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.20.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.21.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
 > **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
@@ -55,7 +55,7 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 
 ### Prerequisites
 
-- **Node.js 18+** OR **Bun 1.0+** installed
+- **Node.js 18+** (Latest LTS recommended for best performance) OR **Bun 1.0+**
 - **kubectl** installed and configured
 - **Git** installed
 - **Helm** (optional, required for Helm tools)

@@ -347,7 +347,7 @@ class K8sMcpServer {
       this.k8sClient = new K8sClient();
     } catch (error) {
       console.error("Failed to initialize K8sClient:", error);
-      throw new Error(`Kubernetes client initialization failed: ${error}`);
+      throw new Error(`Kubernetes client initialization failed: ${error}`, { cause: error });
     }
     
     this.server = new Server(
@@ -411,7 +411,7 @@ class K8sMcpServer {
       console.error(`Registered ${this.toolRegistry.size()} tools successfully`);
     } catch (error) {
       console.error("Failed to register tools:", error);
-      throw new Error(`Tool registration failed: ${error}`);
+      throw new Error(`Tool registration failed: ${error}`, { cause: error });
     }
 
     // Set up request handlers

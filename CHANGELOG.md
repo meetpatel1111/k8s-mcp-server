@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-05-01
+
+### Added
+- **Modernized Dev-Tools Stack**: 
+  - Upgraded to **TypeScript v6.0.3** for faster type-checking and modern syntax support.
+  - Upgraded to **ESLint v10.2.1**, including a full migration to the new **Flat Config (`eslint.config.js`)** format.
+  - Upgraded **esbuild to v0.28.0** for optimized production bundling.
+  - Upgraded **Husky to v9.1.7** for improved Git hooks management.
+- **Enhanced Error Debuggability**: Implemented `cause` property attachment on all custom thrown Errors to preserve original stack traces and improve troubleshooting.
+
+### Changed
+- **Core Dependency Modernization**:
+  - Upgraded **Express to v5.2.1** for improved performance and modern middleware handling.
+  - Upgraded **Zod to v4.4.1** for optimized schema validation.
+  - Updated `@types` ecosystem to match new core versions.
+- **Dependency Stability**: Locked `@opentelemetry` SDK components at v0.45.1/v1.18.1 to ensure runtime stability with existing tracing infrastructure.
+
 ## [0.20.0] - 2026-05-01
 
 ### Added

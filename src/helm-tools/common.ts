@@ -19,7 +19,7 @@ export function runHelm(args: string[], timeout = 30000): string {
       stdio: ["pipe", "pipe", "pipe"],
     }).trim();
   } catch (error: any) {
-    throw new Error(error.stderr || error.message || `helm ${args.join(" ")} failed`);
+    throw new Error(error.stderr || error.message || `helm ${args.join(" ")} failed`, { cause: error });
   }
 }
 
