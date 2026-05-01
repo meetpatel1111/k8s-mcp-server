@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.22.0 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.22.1 logo">
 </p>
 
 # k8s-helm-mcp
@@ -15,7 +15,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/meetpatel1111/k8s-helm-mcp)](https://github.com/meetpatel1111/k8s-helm-mcp/commits/main)
 [![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.22.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.22.1 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
 > **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
@@ -69,7 +69,7 @@ npm start
 **Bun (faster cold start, better performance):**
 ```bash
 bun install
-npm run build  # TypeScript compilation
+npm run build:bun  # High-performance Bun bundling
 npm run start:bun
 ```
 
@@ -82,8 +82,16 @@ Bun provides 50-70% faster cold start and 10-15% faster execution for ephemeral 
 npm run build
 ```
 - Uses esbuild for tree-shaking and minification
-- Bundle size: ~438kb
+- Bundle size: ~480kb
 - Best for production deployment
+
+**High-performance Bun build:**
+```bash
+npm run build:bun
+```
+- Uses Bun's native bundler for extreme speed
+- Bundle size: ~480kb
+- Optimized for users with the Bun runtime
 
 **Fast build (development):**
 ```bash
@@ -290,6 +298,18 @@ npm start
 }
 ```
 
+**Using bunx (Faster - Bun required):**
+```json
+{
+  "mcpServers": {
+    "k8s-helm-mcp": {
+      "command": "bunx",
+      "args": ["k8s-helm-mcp"]
+    }
+  }
+}
+```
+
 **Using Local Build (Mac/Linux Node.js):**
 ```json
 {
@@ -309,6 +329,18 @@ npm start
     "k8s-helm-mcp": {
       "command": "node",
       "args": ["C:\\path\\to\\k8s-helm-mcp\\dist\\index.js"]
+    }
+  }
+}
+```
+
+**Using Local Build (Bun):**
+```json
+{
+  "mcpServers": {
+    "k8s-helm-mcp": {
+      "command": "bun",
+      "args": ["/path/to/k8s-helm-mcp/dist/index.js"]
     }
   }
 }

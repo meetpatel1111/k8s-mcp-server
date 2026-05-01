@@ -1,6 +1,6 @@
 # K8s MCP Server - Complete Tool Reference
 
-**Version: 0.20.0** | **Total Tools: 262+**
+**Version: 0.22.1** | **Total Tools: 262+**
 
 This document provides comprehensive reference for all tools in the Kubernetes MCP Server, including tool catalogs, kubectl mappings, and natural language patterns.
 
@@ -742,12 +742,207 @@ All tools starting with `k8s_delete_`, `k8s_bulk_delete_`, `k8s_helm_uninstall`,
 | Configuration & Secrets | 14 |
 | Monitoring & Observability | 15 |
 | Helm Tools | 40 |
+| "List deployments in production" | `k8s_list_deployments` | namespace="production" |
+| "What services are running?" | `k8s_list_services` | namespace (optional) |
+| "Show all nodes" | `k8s_list_nodes` | - |
+| "Display all namespaces" | `k8s_list_namespaces` | - |
+| "List jobs in staging" | `k8s_list_jobs` | namespace="staging" |
+| "Show cronjobs" | `k8s_list_cronjobs` | namespace (optional) |
+| "List statefulsets" | `k8s_list_statefulsets` | namespace (optional) |
+| "Show daemonsets" | `k8s_list_daemonsets` | namespace (optional) |
+
+#### Getting Details
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Get details for pod my-pod" | `k8s_get_pod` | name="my-pod", namespace |
+| "Describe deployment my-deploy" | `k8s_get_deployment` | name="my-deploy", namespace |
+| "Show service my-service" | `k8s_get_service` | name="my-service", namespace |
+| "Get node info for node-1" | `k8s_get_node` | name="node-1" |
+| "Describe pod failure" | `k8s_analyze_pod_failure` | name, namespace |
+| "Get pod events" | `k8s_get_pod_events` | name, namespace |
+
+#### Resource Status & Health
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Show failing pods" | `k8s_find_crashloop_pods` | namespace (optional) |
+| "Find unhealthy pods" | `k8s_find_unhealthy_pods` | namespace (optional) |
+| "Cluster health check" | `k8s_cluster_health` | - |
+| "Health score" | `k8s_health_score` | - |
+| "Show events" | `k8s_list_events` | namespace (optional), type="Warning" |
+| "Find pods in CrashLoopBackOff" | `k8s_find_crashloop_pods` | namespace (optional) |
+
+#### Resource Usage (Metrics)
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Show pod resource usage" | `k8s_top_pod` | namespace (optional) |
+| "Top pods by CPU" | `k8s_top_pod` | namespace, sortBy="cpu" |
+| "Top pods by memory" | `k8s_top_pod` | namespace, sortBy="memory" |
+| "Show node resource usage" | `k8s_top_node` | - |
+| "Get pod metrics" | `k8s_get_pod_metrics` | namespace, name (optional) |
+| "Get node metrics" | `k8s_get_node_metrics` | name (optional) |
+
+#### Logs
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Show logs for pod my-pod" | `k8s_get_pod_logs` | name="my-pod", namespace |
+| "Get last 100 lines of logs" | `k8s_get_pod_logs` | name, namespace, tailLines=100 |
+| "Follow pod logs" | `k8s_get_pod_logs` | name, namespace, follow=true |
+| "Stream logs" | `k8s_stream_logs` | pod, namespace, follow=true |
+
+#### Scaling & Management
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Scale deployment to 5 replicas" | `k8s_scale_deployment` | name, namespace, replicas=5 |
+| "Restart deployment" | `k8s_restart_deployment` | name, namespace |
+| "Rollback deployment" | `k8s_rollback_deployment` | name, namespace |
+| "Delete pod my-pod" | `k8s_delete_pod` | name, namespace |
+| "Restart pod" | `k8s_restart_pod` | name, namespace |
+
+#### Configuration
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Apply this YAML" | `k8s_apply_manifest` | manifest (YAML string) |
+| "Validate manifest" | `k8s_validate_manifest` | manifest (YAML string) |
+| "Export deployment as YAML" | `k8s_export_resource` | kind="Deployment", name, namespace |
+| "Edit deployment" | `k8s_edit` | resource="deployment", name, namespace |
+| "Create namespace" | `k8s_create_namespace` | name |
+| "Delete namespace" | `k8s_delete_namespace` | name |
+
+#### Networking
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "List ingresses" | `k8s_list_ingresses` | namespace (optional) |
+| "Show network policies" | `k8s_list_network_policies` | namespace (optional) |
+| "Test DNS resolution" | `k8s_test_dns` | hostname, namespace |
+| "Show service topology" | `k8s_service_topology` | namespace (optional) |
+
+#### Storage
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "List PVCs" | `k8s_list_pvcs` | namespace (optional) |
+| "Show PVs" | `k8s_list_pvs` | - |
+| "List storage classes" | `k8s_list_storageclasses` | - |
+| "Find unbound PVCs" | `k8s_find_unbound_pvcs` | namespace (optional) |
+
+#### Security & RBAC
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "List service accounts" | `k8s_list_serviceaccounts` | namespace (optional) |
+| "Show roles" | `k8s_list_roles` | namespace (optional) |
+| "List cluster roles" | `k8s_list_clusterroles` | - |
+| "Show secrets" | `k8s_list_secrets` | namespace (optional) |
+| "Check for privileged pods" | `k8s_check_privileged_pods` | namespace (optional) |
+
+#### Context & Cluster
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Show current context" | `k8s_list_contexts` | - |
+| "Switch context" | `k8s_switch_context` | context |
+| "Cluster version" | `k8s_cluster_version` | - |
+| "Component status" | `k8s_component_status` | - |
+| "API latency check" | `k8s_api_latency_check` | - |
+
+#### Advanced Operations
+
+| User Query Pattern | Tool | Key Parameters |
+|-------------------|------|----------------|
+| "Bulk delete pods with label" | `k8s_bulk_delete_pods` | namespace, labelSelector |
+| "Explain pod resource" | `k8s_explain` | resource="pod", field (optional) |
+| "API resources" | `k8s_api_resources` | namespaced, verbs |
+| "Analyze pod failure" | `k8s_analyze_pod_failure` | name, namespace |
+| "Optimization suggestions" | `k8s_suggest_optimizations` | namespace (optional) |
+| "Find orphaned resources" | `k8s_find_orphaned_resources` | namespace (optional) |
+
+---
+
+## Intent Recognition Guidelines
+
+### Resource Type Detection
+
+- **Pods**: pod, pods, container, containers
+- **Deployments**: deployment, deployments, deploy, app
+- **Services**: service, services, svc
+- **Nodes**: node, nodes, worker, workers, machine
+- **Namespaces**: namespace, namespaces, ns, space
+- **Jobs**: job, jobs, task, tasks
+- **CronJobs**: cronjob, cronjobs, cron, schedule
+- **StatefulSets**: statefulset, statefulsets, sts
+- **DaemonSets**: daemonset, daemonsets, ds
+
+### Action Detection
+
+- **List/Show/Display**: Use `list_*` tools
+- **Get/Describe/Details**: Use `get_*` tools
+- **Delete/Remove/Kill**: Use `delete_*` tools
+- **Scale**: Use `scale_deployment`
+- **Restart**: Use `restart_deployment` or `restart_pod`
+- **Logs**: Use `get_pod_logs` or `stream_logs`
+- **Apply/Create**: Use `apply_manifest` or `create_*` tools
+- **Validate/Check**: Use `validate_manifest` or health tools
+
+### Status Detection
+
+- **Failing/Error/Crash**: Use `find_crashloop_pods`, `find_unhealthy_pods`
+- **Running/Ready/Healthy**: Check status in list results
+- **Pending/Starting**: Check status in list results
+- **Terminated/Completed**: Check status in list results
+
+### Namespace Detection
+
+- Look for patterns: "in [namespace]", "for [namespace]", "namespace [namespace]"
+- Default to "default" if not specified
+- Use "all namespaces" if user says "all" or "every"
+
+---
+
+## Protection Mode Classifications
+
+### Read-Only Tools (Allowed in Strict Protection Mode)
+
+All `list`, `get`, `describe`, `logs`, `events`, `watch`, `search`, `status`, `history`, `export`, `validate`, `diff`, `template`, `lint` operations are read-only.
+
+### Destructive Tools (Blocked by Infrastructure Protection)
+
+All `delete`, `uninstall`, `drain`, `cordon`, `replace`, `rollback` operations are destructive.
+
+### Deletion Tools (Blocked by No Delete Protection Mode)
+
+All tools starting with `k8s_delete_`, `k8s_bulk_delete_`, `k8s_helm_uninstall`, `k8s_helm_plugin_uninstall` are deletion operations.
+
+---
+
+## Tool Categories Summary
+
+| Category | Tool Count |
+|----------|------------|
+| Protection Mode Tools | 4 |
+| Server Management | 3 |
+| Cluster & Context | 20 |
+| Node Management | 13 |
+| Pod Management | 22 |
+| Workload Management | 30 |
+| Networking & Services | 17 |
+| Storage Management | 11 |
+| Security & RBAC | 28 |
+| Configuration & Secrets | 14 |
+| Monitoring & Observability | 15 |
+| Helm Tools | 40 |
 | Advanced & Diagnostic | 44 |
 | **Total** | **260+** |
 
 ---
 
-*Generated for k8s-helm-mcp v0.20.0*
+*Generated for k8s-helm-mcp v0.22.1*
 
 ---
 
