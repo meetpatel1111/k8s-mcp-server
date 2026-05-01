@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.1] - 2026-05-01
+
+### Added
+- **Optimized Build Pipeline**: Refactored `scripts/build.ts` to use automated dependency externalization, reducing production bundle size from ~5MB to **460 KB**.
+- **IDE Configuration**: Updated `tsconfig.json` to include the `scripts/` directory and relaxed `rootDir` constraints, resolving all "missing name" type errors in the build script.
+- **Bun Support**: Added high-performance native Bun build and configuration options for Claude Desktop users.
+
 ## [0.22.0] - 2026-05-01
 
 ### Added

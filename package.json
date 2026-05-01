@@ -1,6 +1,6 @@
 {
   "name": "k8s-helm-mcp",
-  "version": "0.22.0",
+  "version": "0.22.1",
   "description": "Production-grade Kubernetes MCP Server - Complete kubectl coverage with Infrastructure Protection, Helm support, Diagnostics, Response Caching, 262 tools, Direct Exec, OpenTelemetry",
   "type": "module",
   "main": "dist/index.js",
@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "build": "npx tsx scripts/build.ts",
+    "build:bun": "bun build src/index.ts --outfile dist/index.js --target node --minify --external @kubernetes/client-node --external @modelcontextprotocol/sdk --external @opentelemetry/* --external express --external zod --external js-yaml",
     "build:dev": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
