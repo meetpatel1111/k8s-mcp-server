@@ -3151,3 +3151,21 @@ To achieve maximum performance:
 **k8s-helm-mcp-main** is the clear winner for **high performance + advanced features**. The direct API access, caching system, comprehensive tool coverage, and advanced error handling provide significant performance advantages (3-7x faster latency, 5-10x higher throughput) that far outweigh the slower cold start and larger bundle size.
 
 The few missing features (OpenTelemetry, SSE transport) can be added as optimizations without sacrificing the core performance advantages. For production use cases requiring both speed and feature completeness, **k8s-helm-mcp-main** is the recommended choice.
+
+---
+
+## Project Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[README.md](README.md)** | Main documentation - Quick start, features, and examples |
+| **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)** | Complete tool reference with kubectl mappings and parameter details |
+| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Detailed API schemas and input/output examples |
+| **[SECURITY.md](SECURITY.md)** | Security features, input sanitization, and secret scrubbing |
+| **[PERFORMANCE_COMPARISON.md](PERFORMANCE_COMPARISON.md)** | Benchmarks and performance optimization details |
+| **[CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)** | Cloud provider specific limitations (AKS, GKE, EKS) |
+| **[METRICS_SERVER.md](METRICS_SERVER.md)** | Metrics-server installation and configuration |
+| **[DOCKER_DESKTOP_GUIDE.md](DOCKER_DESKTOP_GUIDE.md)** | Docker Desktop Kubernetes setup guide |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contribution guidelines and development setup |
+| **[CHANGELOG.md](CHANGELOG.md)** | Release history and notable changes |
+| **[PRIVATE_REGISTRY_GUIDE.md](PRIVATE_REGISTRY_GUIDE.md)** | Private Helm and Docker registry configuration |

@@ -526,3 +526,21 @@ The k8s-helm-mcp is designed with security as a foundational principle:
 - **Memory-only credential storage** - no persistence of sensitive data
 
 By following the security best practices outlined in this guide, you can ensure safe and secure operation of the k8s-helm-mcp in your environment.
+
+---
+
+## Project Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[README.md](README.md)** | Main documentation - Quick start, features, and examples |
+| **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)** | Complete tool reference with kubectl mappings and parameter details |
+| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Detailed API schemas and input/output examples |
+| **[SECURITY.md](SECURITY.md)** | Security features, input sanitization, and secret scrubbing |
+| **[PERFORMANCE_COMPARISON.md](PERFORMANCE_COMPARISON.md)** | Benchmarks and performance optimization details |
+| **[CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)** | Cloud provider specific limitations (AKS, GKE, EKS) |
+| **[METRICS_SERVER.md](METRICS_SERVER.md)** | Metrics-server installation and configuration |
+| **[DOCKER_DESKTOP_GUIDE.md](DOCKER_DESKTOP_GUIDE.md)** | Docker Desktop Kubernetes setup guide |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contribution guidelines and development setup |
+| **[CHANGELOG.md](CHANGELOG.md)** | Release history and notable changes |
+| **[PRIVATE_REGISTRY_GUIDE.md](PRIVATE_REGISTRY_GUIDE.md)** | Private Helm and Docker registry configuration |

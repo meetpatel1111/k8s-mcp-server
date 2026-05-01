@@ -1,15 +1,21 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.21.0 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.21.1 logo">
 </p>
 
 # k8s-helm-mcp
 
-[![npm version](https://badge.fury.io/js/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
+[![npm version](https://img.shields.io/npm/v/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
+[![npm total downloads](https://img.shields.io/npm/dt/k8s-helm-mcp.svg)](https://www.npmjs.com/package/k8s-helm-mcp)
+[![GitHub Stars](https://img.shields.io/github/stars/meetpatel1111/k8s-helm-mcp.svg)](https://github.com/meetpatel1111/k8s-helm-mcp/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/meetpatel1111/k8s-helm-mcp.svg)](https://github.com/meetpatel1111/k8s-helm-mcp/network/members)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/k8s-helm-mcp)](https://bundlephobia.com/package/k8s-helm-mcp)
 [![Node.js Version](https://img.shields.io/node/v/k8s-helm-mcp.svg)](https://nodejs.org/)
+[![GitHub last commit](https://img.shields.io/github/last-commit/meetpatel1111/k8s-helm-mcp)](https://github.com/meetpatel1111/k8s-helm-mcp/commits/main)
 [![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.21.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.21.1 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
 > **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
@@ -39,17 +45,6 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 | **Advanced** | Raw API queries, pod failure analysis, bulk operations, orphaned resource detection, resource age reports |
 | **Helm** | 40+ tools for releases, charts, repos, plugins, registry (install, upgrade, rollback, lint, template, search) |
 | **Server Management** | Server info, health checks, tool metrics, protection mode toggles |
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| **[README.md](README.md)** | Main documentation (this file) - Quick start, features, examples |
-| **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)** | Complete tool reference with kubectl mappings, natural language patterns, and parameter details |
-| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Detailed API schemas, input/output examples for key tools |
-| **[CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)** | Known limitations and workarounds for cloud providers (AKS, GKE, EKS) |
-| **[METRICS_SERVER.md](METRICS_SERVER.md)** | Installation guide for metrics-server (required for metrics tools) |
-| **[DOCKER_DESKTOP_GUIDE.md](DOCKER_DESKTOP_GUIDE.md)** | Docker Desktop Kubernetes setup guide |
 
 ## Quick Start
 
@@ -1113,10 +1108,28 @@ A:
 
 ## License
 
-MIT
+Apache License 2.0
 
 ## Author
 
 **Meetkumar Patel**  
 Email: [pmeet464@gmail.com](mailto:pmeet464@gmail.com)  
 GitHub: [@meetpatel1111](https://github.com/meetpatel1111)
+
+---
+
+## Project Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[README.md](README.md)** | Main documentation - Quick start, features, and examples |
+| **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)** | Complete tool reference with kubectl mappings and parameter details |
+| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Detailed API schemas and input/output examples |
+| **[SECURITY.md](SECURITY.md)** | Security features, input sanitization, and secret scrubbing |
+| **[PERFORMANCE_COMPARISON.md](PERFORMANCE_COMPARISON.md)** | Benchmarks and performance optimization details |
+| **[CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)** | Cloud provider specific limitations (AKS, GKE, EKS) |
+| **[METRICS_SERVER.md](METRICS_SERVER.md)** | Metrics-server installation and configuration |
+| **[DOCKER_DESKTOP_GUIDE.md](DOCKER_DESKTOP_GUIDE.md)** | Docker Desktop Kubernetes setup guide |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contribution guidelines and development setup |
+| **[CHANGELOG.md](CHANGELOG.md)** | Release history and notable changes |
+| **[PRIVATE_REGISTRY_GUIDE.md](PRIVATE_REGISTRY_GUIDE.md)** | Private Helm and Docker registry configuration |
