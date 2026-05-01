@@ -54,7 +54,7 @@ npm run dev  # Runs TypeScript in watch mode
 
 ### Naming Conventions
 
-- **Tool names:** Use `k8s_` prefix for Kubernetes tools, `mcp8_k8s_` for MCP server tools
+- **Tool names:** Use `k8s_` prefix for standard Kubernetes tools, `k8s_helm_` for Helm tools, and `mcp_` for server management tools.
 - **File names:** Use lowercase with hyphens for utilities, camelCase for tool files
 - **Variables:** Use camelCase
 - **Constants:** Use UPPER_SNAKE_CASE
@@ -111,16 +111,13 @@ server.addTool(k8s_your_tool);
 
 ### Step 4: Add Protection Mode (if destructive)
 
-If the tool performs destructive operations, add protection checks:
+If the tool performs destructive or modification operations, it must be validated by the **ProtectionManager**. Add it to the appropriate category in `src/security/protection-manager.ts`:
 
-```typescript
-async handler(args, context) {
-  if (config.infraProtectionMode) {
-    throw new Error("Operation blocked by infrastructure protection mode");
-  }
-  // ... rest of implementation
-}
-```
+- `READ_ONLY_TOOLS`: For tools that don't modify state (get, list, logs, etc.)
+- `DESTRUCTIVE_TOOLS`: For tools that can break infrastructure (delete, cordon, drain)
+- `DELETION_TOOLS`: Specifically for deletion operations
+
+The server automatically validates every tool call against the current protection mode settings.
 
 ### Step 5: Update Documentation
 

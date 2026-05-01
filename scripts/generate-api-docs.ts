@@ -23,6 +23,7 @@ import { registerTemplateTools } from '../src/k8s-tools/templates.js';
 import { registerWebSocketTools } from '../src/k8s-tools/websocket.js';
 import { registerWorkloadTools } from '../src/k8s-tools/workloads.js';
 import { registerAdvancedTools } from '../src/k8s-tools/advanced.js';
+import { registerMultiClusterTools } from '../src/k8s-tools/multi-cluster.js';
 
 import { registerHelmChartManagementTools } from '../src/helm-tools/chart-management.js';
 import { registerHelmChartTemplateTools } from '../src/helm-tools/chart-template.js';
@@ -43,8 +44,6 @@ import { registerHelmReleaseUpgradeTools } from '../src/helm-tools/release-upgra
 import { registerHelmRepoManagementTools } from '../src/helm-tools/repo-management.js';
 import { registerHelmSearchHubTools } from '../src/helm-tools/search-hub.js';
 import { registerHelmShowChartTools } from '../src/helm-tools/show-chart.js';
-
-import { K8sClient } from '../src/k8s-client.js';
 
 interface ToolInfo {
   name: string;
@@ -69,10 +68,36 @@ interface ToolCategory {
 }
 
 // Mock K8sClient for tool registration
-class MockK8sClient extends K8sClient {
-  constructor() {
-    super();
-  }
+class MockK8sClient {
+  constructor() {}
+  getCoreV1Api() { return {}; }
+  getAppsV1Api() { return {}; }
+  getBatchV1Api() { return {}; }
+  getNetworkingV1Api() { return {}; }
+  getStorageV1Api() { return {}; }
+  getRbacV1Api() { return {}; }
+  getClusterVersion() { return {}; }
+  listNodes() { return []; }
+  listNamespaces() { return []; }
+  listPods() { return []; }
+  listDeployments() { return []; }
+  listServices() { return []; }
+  listPVCs() { return []; }
+  listConfigMaps() { return []; }
+  listEvents() { return []; }
+  getPod() { return {}; }
+  getDeployment() { return {}; }
+  getContexts() { return []; }
+  getCurrentContext() { return ""; }
+  getComponentStatuses() { return []; }
+  withContext(ctx: string, op: Function) { return op(); }
+  rawApiRequest() { return {}; }
+  get kc() { return { 
+    makeApiClient: () => ({}),
+    getCurrentContext: () => "",
+    getCurrentCluster: () => ({}),
+    getContexts: () => [],
+  }; }
 }
 
 function extractProperties(schema: any, indent: string = ''): string {
@@ -92,12 +117,10 @@ function extractProperties(schema: any, indent: string = ''): string {
 
     lines.push(`${indent}- **${key}** (${type}${isRequired ? ', required' : 'optional'})${defaultValue}${enumValues}: ${description}`);
 
-    // Handle nested objects
     if (type === 'object' && value.properties) {
       lines.push(extractProperties(value, indent + '  '));
     }
 
-    // Handle array items
     if (type === 'array' && value.items) {
       if (value.items.type === 'object' && value.items.properties) {
         lines.push(`${indent}  Items:`);
@@ -113,7 +136,6 @@ function extractProperties(schema: any, indent: string = ''): string {
 
 function generateToolMarkdown(tool: ToolInfo): string {
   const lines: string[] = [];
-
   lines.push(`### ${tool.name}`);
   lines.push('');
   lines.push(tool.description);
@@ -134,7 +156,6 @@ function generateToolMarkdown(tool: ToolInfo): string {
 
 function generateCategoryMarkdown(category: ToolCategory): string {
   const lines: string[] = [];
-
   lines.push(`## ${category.name}`);
   lines.push('');
   lines.push(category.description);
@@ -153,7 +174,6 @@ function generateApiDocs(): string {
   const mockClient = new MockK8sClient();
   const categories: ToolCategory[] = [];
 
-  // Kubernetes Tools
   const k8sCategories = [
     { name: 'Cluster Tools', register: registerClusterTools, description: 'Kubernetes cluster management and context operations' },
     { name: 'Config Tools', register: registerConfigTools, description: 'Kubeconfig management and configuration operations' },
@@ -167,11 +187,12 @@ function generateApiDocs(): string {
     { name: 'Templates Tools', register: registerTemplateTools, description: 'Deployment templates and quick deployment utilities' },
     { name: 'WebSocket Tools', register: registerWebSocketTools, description: 'Real-time streaming, exec, and port forwarding' },
     { name: 'Workloads Tools', register: registerWorkloadTools, description: 'Deployments, StatefulSets, DaemonSets, Jobs, and CronJobs' },
+    { name: 'Multi-Cluster Tools', register: registerMultiClusterTools, description: 'Operations across multiple clusters and contexts' },
     { name: 'Advanced Tools', register: registerAdvancedTools, description: 'Advanced operations including batch processing and resource comparison' },
   ];
 
   for (const cat of k8sCategories) {
-    const tools = cat.register(mockClient);
+    const tools = (cat.register as any)(mockClient);
     categories.push({
       name: cat.name,
       description: cat.description,
@@ -184,7 +205,6 @@ function generateApiDocs(): string {
     });
   }
 
-  // Helm Tools
   const helmCategories = [
     { name: 'Helm Chart Management', register: registerHelmChartManagementTools, description: 'Helm chart creation, packaging, linting, and verification' },
     { name: 'Helm Chart Template', register: registerHelmChartTemplateTools, description: 'Helm chart template rendering' },
@@ -208,7 +228,7 @@ function generateApiDocs(): string {
   ];
 
   for (const cat of helmCategories) {
-    const tools = cat.register(mockClient);
+    const tools = (cat.register as any)(mockClient);
     categories.push({
       name: cat.name,
       description: cat.description,
@@ -221,9 +241,7 @@ function generateApiDocs(): string {
     });
   }
 
-  // Generate markdown
   const lines: string[] = [];
-
   lines.push('# API Documentation');
   lines.push('');
   lines.push('This document provides auto-generated API documentation for all Kubernetes and Helm tools.');
@@ -231,7 +249,6 @@ function generateApiDocs(): string {
   lines.push('**Generated:** ' + new Date().toISOString());
   lines.push('');
 
-  // Summary
   const totalTools = categories.reduce((sum, cat) => sum + cat.tools.length, 0);
   lines.push('## Summary');
   lines.push('');
@@ -241,7 +258,6 @@ function generateApiDocs(): string {
   lines.push(`- **Helm Tools:** ${helmCategories.length} categories`);
   lines.push('');
 
-  // Table of Contents
   lines.push('## Table of Contents');
   lines.push('');
   for (const category of categories) {
@@ -250,7 +266,6 @@ function generateApiDocs(): string {
   }
   lines.push('');
 
-  // Categories
   for (const category of categories) {
     lines.push(generateCategoryMarkdown(category));
   }
@@ -258,47 +273,14 @@ function generateApiDocs(): string {
   return lines.join('\n');
 }
 
-// Main execution
 function main() {
   console.log('Generating API documentation...');
-
   try {
     const docs = generateApiDocs();
     const outputPath = path.join(process.cwd(), 'API_DOCUMENTATION.md');
-
     fs.writeFileSync(outputPath, docs, 'utf-8');
-
     console.log(`✓ API documentation generated: ${outputPath}`);
-
-    // Print summary
-    const mockClient = new MockK8sClient();
-    let totalTools = 0;
-
-    const allRegisters = [
-      registerClusterTools, registerConfigTools, registerDiagnosticsTools,
-      registerMonitoringTools, registerNetworkingTools, registerNodeTools,
-      registerPodTools, registerSecurityTools, registerStorageTools,
-      registerTemplateTools, registerWebSocketTools, registerWorkloadTools,
-      registerAdvancedTools, registerHelmChartManagementTools,
-      registerHelmChartTemplateTools, registerHelmDependencyManagementTools,
-      registerHelmEnvironmentTools, registerHelmPluginManagementTools,
-      registerHelmRegistryManagementTools, registerHelmReleaseGetInfoTools,
-      registerHelmReleaseGetValuesTools, registerHelmReleaseHistoryTools,
-      registerHelmReleaseInstallTools, registerHelmReleaseListTools,
-      registerHelmReleaseRollbackTools, registerHelmReleaseStatusTools,
-      registerHelmReleaseTestTools, registerHelmReleaseUninstallTools,
-      registerHelmReleaseUpgradeTools, registerHelmRepoManagementTools,
-      registerHelmSearchHubTools, registerHelmShowChartTools,
-    ];
-
-    for (const register of allRegisters) {
-      totalTools += register(mockClient).length;
-    }
-
-    console.log(`\nSummary:`);
-    console.log(`- Total tools documented: ${totalTools}`);
-    console.log(`- Output file: API_DOCUMENTATION.md`);
-
+    console.log(`- Total tools documented: ${docs.split('### ').length - 1}`);
   } catch (error) {
     console.error('Error generating documentation:', error);
     process.exit(1);

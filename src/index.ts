@@ -51,6 +51,7 @@ import { scrubSensitiveData } from "./utils/secret-scrubber.js";
 import { auditLogger } from "./audit-logger.js";
 import { sanitizeInputArgs } from "./utils/input-sanitizer.js";
 import { validateNamespace, validateResourceName } from "./validators.js";
+import { ProtectionManager } from "./security/protection-manager.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
@@ -100,60 +101,10 @@ class K8sMcpServer {
   private healthCheckInterval?: NodeJS.Timeout;
   private readonly config: ServerConfig;
   private readonly cacheManager: CacheManager;
+  private readonly protectionManager: ProtectionManager;
   // Sliding window for error rate tracking (timestamps of recent errors)
   private recentErrors: number[] = [];
-  // Strict Protection Mode - blocks ALL non-read-only operations
-  private strictProtectionEnabled: boolean = false;
-  // No Delete Protection Mode - blocks only deletion operations
-  private noDeleteProtectionEnabled: boolean = false;
-  private readonly READ_ONLY_TOOLS = new Set([
-    "k8s_list_contexts", "k8s_cluster_version", "k8s_component_status",
-    "k8s_cluster_health", "k8s_list_namespaces", "k8s_api_latency_check",
-    "k8s_cluster_info", "k8s_version", "k8s_api_versions", "k8s_api_resources",
-    "k8s_list_nodes", "k8s_get_node", "k8s_node_pressure_status",
-    "k8s_list_pods", "k8s_get_pod", "k8s_describe_pod", "k8s_get_pod_events",
-    "k8s_get_logs", "k8s_find_unhealthy_pods", "k8s_find_crashloop_pods",
-    "k8s_list_deployments", "k8s_get_deployment", "k8s_deployment_rollout_status",
-    "k8s_list_replicasets", "k8s_get_replicaset",
-    "k8s_list_statefulsets", "k8s_get_statefulset",
-    "k8s_list_daemonsets", "k8s_get_daemonset",
-    "k8s_list_jobs", "k8s_get_job", "k8s_list_cronjobs", "k8s_get_cronjob",
-    "k8s_list_services", "k8s_get_service", "k8s_get_service_endpoints",
-    "k8s_list_ingresses", "k8s_get_ingress", "k8s_list_network_policies",
-    "k8s_list_pvs", "k8s_get_pv", "k8s_list_pvcs", "k8s_get_pvc_details",
-    "k8s_list_storageclasses", "k8s_get_storageclass",
-    "k8s_list_configmaps", "k8s_get_configmap",
-    "k8s_list_secrets", "k8s_get_secret",
-    "k8s_list_serviceaccounts", "k8s_get_serviceaccount",
-    "k8s_list_roles", "k8s_get_role", "k8s_list_clusterroles", "k8s_get_clusterrole",
-    "k8s_list_rolebindings", "k8s_get_rolebinding",
-    "k8s_list_clusterrolebindings", "k8s_get_clusterrolebinding",
-    "k8s_get_rbac_summary", "k8s_list_events", "k8s_get_resource_quotas",
-    "k8s_get_limit_ranges", "k8s_health_score", "k8s_get_pod_metrics",
-    "k8s_get_node_metrics", "k8s_top_pod", "k8s_top_node",
-    "k8s_list_pod_disruption_budgets", "k8s_suggest_optimizations",
-    "k8s_list_endpoints", "k8s_list_endpointslice",
-    "k8s_list_crd", "k8s_list_custom_resources",
-    "k8s_rollout_history", "k8s_explain",
-    "k8s_check_privileged_pods", "k8s_auth_can_i",
-    "k8s_find_orphaned_resources", "k8s_find_unbound_pvcs",
-    "k8s_storage_summary", "k8s_service_topology",
-    "k8s_analyze_pod_failure", "k8s_debug_scheduling",
-    "k8s_list_hpa", "k8s_get_hpa",
-    "k8s_watch", "k8s_config_set", "k8s_config_unset",
-    "k8s_pod_log_search",
-    // Helm read-only tools
-    "k8s_helm_list", "k8s_helm_status", "k8s_helm_history",
-    "k8s_helm_get_manifest", "k8s_helm_get_notes", "k8s_helm_get_hooks",
-    "k8s_helm_get_all", "k8s_helm_get_metadata", "k8s_helm_values",
-    "k8s_helm_repo_list", "k8s_helm_search", "k8s_helm_show",
-    "k8s_helm_template", "k8s_helm_env", "k8s_helm_version",
-    "k8s_helm_plugin_list", "k8s_helm_verify", "k8s_helm_lint",
-    // Server tools
-    "mcp_server_info", "mcp_health_check", "mcp_tool_metrics",
-    "k8s_toggle_protection_mode", "k8s_toggle_strict_protection_mode", "k8s_toggle_no_delete_mode",
-    "k8s_toggle_all_protection_modes",
-  ]);
+  
   // Per-tool timeout overrides (ms)
   private readonly TOOL_TIMEOUTS: Record<string, number> = {
     "k8s_cluster_info_dump": 120000,
@@ -168,149 +119,6 @@ class K8sMcpServer {
     "k8s_namespace_summary": 60000,
     "k8s_resource_age_report": 60000,
   };
-  
-  // Infrastructure Protection Mode
-  private infraProtectionEnabled: boolean = true; // Enabled by default for safety
-  private readonly DESTRUCTIVE_TOOLS = new Set([
-    // Deletion operations
-    "k8s_delete_pod",
-    "k8s_bulk_delete_pods",
-    "k8s_delete",
-    "k8s_delete_namespace",
-    "k8s_delete_deployment",
-    "k8s_delete_statefulset",
-    "k8s_delete_daemonset",
-    "k8s_delete_replicaset",
-    "k8s_delete_job",
-    "k8s_delete_cronjob",
-    "k8s_delete_service",
-    "k8s_delete_ingress",
-    "k8s_delete_configmap",
-    "k8s_delete_secret",
-    "k8s_delete_pvc",
-    "k8s_delete_serviceaccount",
-    "k8s_delete_role",
-    "k8s_delete_clusterrole",
-    "k8s_delete_rolebinding",
-    "k8s_delete_clusterrolebinding",
-    "k8s_delete_hpa",
-    "k8s_delete_networkpolicy",
-    "k8s_delete_resourcequota",
-    "k8s_delete_limitrange",
-    "k8s_delete_storageclass",
-    "k8s_delete_pv",
-    "k8s_delete_pdb",
-    "k8s_delete_runtimeclass",
-    "k8s_delete_lease",
-    "k8s_delete_csr",
-    "k8s_delete_ingressclass",
-    // Node operations that affect scheduling
-    "k8s_drain_node",
-    "k8s_cordon_node",
-    "k8s_uncordon_node",
-    "k8s_add_node_taint",
-    "k8s_remove_node_taint",
-    // Scaling operations that could cause issues
-    "k8s_scale_deployment",
-    "k8s_scale",
-    "k8s_autoscale",
-    // Resource modifications
-    "k8s_patch",
-    "k8s_label",
-    "k8s_annotate",
-    "k8s_set_image",
-    "k8s_edit",
-    // Rollout operations
-    "k8s_restart_deployment",
-    "k8s_rollback_deployment",
-    "k8s_rollout_undo",
-    "k8s_rollout_pause",
-    "k8s_rollout_resume",
-    "k8s_restart_statefulset",
-    "k8s_restart_daemonset",
-    // Creation operations that could be risky
-    "k8s_apply_manifest",
-    "k8s_create_deployment",
-    "k8s_create_job",
-    "k8s_create_cronjob",
-    "k8s_create_service",
-    "k8s_create_ingress",
-    "k8s_create_networkpolicy",
-    "k8s_create_configmap",
-    "k8s_create_secret",
-    "k8s_create_serviceaccount",
-    "k8s_create_role",
-    "k8s_create_rolebinding",
-    "k8s_create_clusterrole",
-    "k8s_create_clusterrolebinding",
-    "k8s_create_resource_quota",
-    "k8s_create_limit_range",
-    "k8s_create_namespace",
-    "k8s_create_priorityclass",
-    "k8s_expose",
-    "k8s_run",
-    "k8s_quick_deploy",
-    // Helm destructive operations
-    "k8s_helm_install",
-    "k8s_helm_upgrade",
-    "k8s_helm_uninstall",
-    "k8s_helm_rollback",
-    "k8s_helm_test",
-    "k8s_helm_create",
-    "k8s_helm_package",
-    "k8s_helm_push",
-    "k8s_helm_repo_add",
-    "k8s_helm_repo_remove",
-    "k8s_helm_repo_update",
-    "k8s_helm_repo_index",
-    "k8s_helm_dependency",
-    "k8s_helm_plugin_install",
-    "k8s_helm_plugin_uninstall",
-    "k8s_helm_plugin_update",
-    "k8s_helm_plugin_package",
-    "k8s_helm_registry_login",
-    "k8s_helm_registry_logout",
-    "k8s_helm_pull",
-  ]);
-
-  // No Delete Protection Mode - only blocks deletion operations
-  private readonly DELETION_TOOLS = new Set([
-    // Kubernetes resource deletions
-    "k8s_delete_pod",
-    "k8s_bulk_delete_pods",
-    "k8s_delete",
-    "k8s_delete_namespace",
-    "k8s_delete_deployment",
-    "k8s_delete_statefulset",
-    "k8s_delete_daemonset",
-    "k8s_delete_replicaset",
-    "k8s_delete_job",
-    "k8s_delete_cronjob",
-    "k8s_delete_service",
-    "k8s_delete_ingress",
-    "k8s_delete_configmap",
-    "k8s_delete_secret",
-    "k8s_delete_pvc",
-    "k8s_delete_serviceaccount",
-    "k8s_delete_role",
-    "k8s_delete_clusterrole",
-    "k8s_delete_rolebinding",
-    "k8s_delete_clusterrolebinding",
-    "k8s_delete_hpa",
-    "k8s_delete_networkpolicy",
-    "k8s_delete_resourcequota",
-    "k8s_delete_limitrange",
-    "k8s_delete_storageclass",
-    "k8s_delete_pv",
-    "k8s_delete_pdb",
-    "k8s_delete_runtimeclass",
-    "k8s_delete_lease",
-    "k8s_delete_csr",
-    "k8s_delete_ingressclass",
-    // Helm deletions
-    "k8s_helm_uninstall",
-    "k8s_helm_plugin_uninstall",
-  ]);
 
   constructor() {
     // Initialize OpenTelemetry first
@@ -318,9 +126,13 @@ class K8sMcpServer {
 
     // Load configuration
     this.config = loadConfig();
-    this.infraProtectionEnabled = this.config.infraProtectionEnabled;
-    this.strictProtectionEnabled = this.config.strictProtectionEnabled;
-    this.noDeleteProtectionEnabled = this.config.noDeleteProtectionEnabled;
+
+    // Initialize protection manager
+    this.protectionManager = new ProtectionManager({
+      infraProtectionEnabled: this.config.infraProtectionEnabled,
+      strictProtectionEnabled: this.config.strictProtectionEnabled,
+      noDeleteProtectionEnabled: this.config.noDeleteProtectionEnabled,
+    });
 
     // Initialize cache manager
     this.cacheManager = new CacheManager(this.config.cacheDefaultTtl);
@@ -330,16 +142,16 @@ class K8sMcpServer {
 
     this.setupGracefulShutdown();
 
-    console.error(`Infrastructure Protection Mode: ${this.infraProtectionEnabled ? "ENABLED" : "DISABLED"}`);
-    if (this.infraProtectionEnabled) {
+    console.error(`Infrastructure Protection Mode: ${this.protectionManager.isInfraProtectionEnabled() ? "ENABLED" : "DISABLED"}`);
+    if (this.protectionManager.isInfraProtectionEnabled()) {
       console.error(`Destructive tools are blocked. Use k8s_toggle_protection_mode to disable.`);
     }
-    console.error(`Strict Protection Mode: ${this.strictProtectionEnabled ? "ENABLED" : "DISABLED"}`);
-    if (this.strictProtectionEnabled) {
+    console.error(`Strict Protection Mode: ${this.protectionManager.isStrictProtectionEnabled() ? "ENABLED" : "DISABLED"}`);
+    if (this.protectionManager.isStrictProtectionEnabled()) {
       console.error(`ALL modification operations are blocked. Only read-only tools are available.`);
     }
-    console.error(`No Delete Protection Mode: ${this.noDeleteProtectionEnabled ? "ENABLED" : "DISABLED"}`);
-    if (this.noDeleteProtectionEnabled) {
+    console.error(`No Delete Protection Mode: ${this.protectionManager.isNoDeleteProtectionEnabled() ? "ENABLED" : "DISABLED"}`);
+    if (this.protectionManager.isNoDeleteProtectionEnabled()) {
       console.error(`Delete operations are blocked. Updates and modifications are still allowed.`);
     }
 
@@ -434,27 +246,14 @@ class K8sMcpServer {
       const args = request.params.arguments;
 
       // Log tool call and protection state for debugging (visible in MCP logs)
-      const isDestructive = this.DESTRUCTIVE_TOOLS.has(name);
-      const isReadOnly = this.READ_ONLY_TOOLS.has(name);
-      const isDeletion = this.DELETION_TOOLS.has(name);
-      console.error(`[MCP Tool Call] ${name} | Infra: ${this.infraProtectionEnabled} (Destructive: ${isDestructive}) | Strict: ${this.strictProtectionEnabled} (ReadOnly: ${isReadOnly}) | NoDelete: ${this.noDeleteProtectionEnabled} (Deletion: ${isDeletion})`);
+      const isDestructive = this.protectionManager.isDestructiveTool(name);
+      const isReadOnly = this.protectionManager.isReadOnlyTool(name);
+      const isDeletion = this.protectionManager.isDeletionTool(name);
+      console.error(`[MCP Tool Call] ${name} | Infra: ${this.protectionManager.isInfraProtectionEnabled()} (Destructive: ${isDestructive}) | Strict: ${this.protectionManager.isStrictProtectionEnabled()} (ReadOnly: ${isReadOnly}) | NoDelete: ${this.protectionManager.isNoDeleteProtectionEnabled()} (Deletion: ${isDeletion})`);
 
       try {
         // 1. Mandatory Protection Checks - ALWAYS RUN FIRST
-        if (this.infraProtectionEnabled && isDestructive) {
-          throw new Error(`Tool '${name}' is blocked by Infrastructure Protection Mode. ` +
-            `This is a destructive operation that could impact cluster stability.`);
-        }
-
-        if (this.strictProtectionEnabled && !isReadOnly) {
-          throw new Error(`Tool '${name}' is blocked by Strict Protection Mode. ` +
-            `Only read-only/list operations are allowed.`);
-        }
-
-        if (this.noDeleteProtectionEnabled && isDeletion) {
-          throw new Error(`Tool '${name}' is blocked by No Delete Protection Mode. ` +
-            `Deletion of resources is currently restricted.`);
-        }
+        this.protectionManager.validateOperation(name);
 
         const handler = this.toolRegistry.getHandler(name);
         if (!handler) {
@@ -490,7 +289,7 @@ class K8sMcpServer {
         }
 
         // Check cache for read-only operations
-        if (this.READ_ONLY_TOOLS.has(name)) {
+        if (this.protectionManager.isReadOnlyTool(name)) {
           const cacheKey = `${name}:${JSON.stringify(sanitizedArgs || {})}`;
           const cached = this.cacheManager.get(cacheKey);
           if (cached !== undefined) {
@@ -528,7 +327,7 @@ class K8sMcpServer {
         this.updateToolMetrics(name, startTime, true);
 
         // Cache read-only results
-        if (this.READ_ONLY_TOOLS.has(name)) {
+        if (this.protectionManager.isReadOnlyTool(name)) {
           const cacheKey = `${name}:${JSON.stringify(sanitizedArgs || {})}`;
           this.cacheManager.set(cacheKey, result);
         }
@@ -630,8 +429,8 @@ class K8sMcpServer {
       },
       handler: async ({ includeMetrics }: { includeMetrics?: boolean }) => {
         const uptime = this.getUptime();
-        const blockedCount = this.strictProtectionEnabled
-          ? Array.from(this.toolRegistry.getAllTools().keys()).filter(name => !this.READ_ONLY_TOOLS.has(name)).length
+        const blockedCount = this.protectionManager.isStrictProtectionEnabled()
+          ? Array.from(this.toolRegistry.getAllTools().keys()).filter(name => !this.protectionManager.isReadOnlyTool(name)).length
           : 0;
         const info: ServerInfo = {
           name: "k8s-helm-mcp",
@@ -643,11 +442,11 @@ class K8sMcpServer {
           errorCount: this.errorCount,
           requestCount: this.requestCount,
           protectionModes: {
-            infrastructure: this.infraProtectionEnabled,
-            strict: this.strictProtectionEnabled,
-            noDelete: this.noDeleteProtectionEnabled,
+            infrastructure: this.protectionManager.isInfraProtectionEnabled(),
+            strict: this.protectionManager.isStrictProtectionEnabled(),
+            noDelete: this.protectionManager.isNoDeleteProtectionEnabled(),
             strictBlockedToolCount: blockedCount > 0 ? blockedCount : undefined,
-            noDeleteBlockedToolCount: this.noDeleteProtectionEnabled ? this.DELETION_TOOLS.size : undefined,
+            noDeleteBlockedToolCount: this.protectionManager.isNoDeleteProtectionEnabled() ? this.protectionManager.getDeletionToolsCount() : undefined,
           },
         };
         
@@ -694,8 +493,8 @@ class K8sMcpServer {
         },
       },
       handler: async ({ deep, timeout }: { deep?: boolean; timeout?: number }) => {
-        const blockedCount = this.strictProtectionEnabled
-          ? Array.from(this.toolRegistry.getAllTools().keys()).filter(name => !this.READ_ONLY_TOOLS.has(name)).length
+        const blockedCount = this.protectionManager.isStrictProtectionEnabled()
+          ? Array.from(this.toolRegistry.getAllTools().keys()).filter(name => !this.protectionManager.isReadOnlyTool(name)).length
           : 0;
         const health = {
           server: {
@@ -707,12 +506,12 @@ class K8sMcpServer {
             circuitBreakerOpen: this.circuitBreakerOpen,
           },
           protection: {
-            infrastructure: this.infraProtectionEnabled,
-            strict: this.strictProtectionEnabled,
-            noDelete: this.noDeleteProtectionEnabled,
+            infrastructure: this.protectionManager.isInfraProtectionEnabled(),
+            strict: this.protectionManager.isStrictProtectionEnabled(),
+            noDelete: this.protectionManager.isNoDeleteProtectionEnabled(),
             strictBlockedToolCount: blockedCount > 0 ? blockedCount : undefined,
-            noDeleteBlockedToolCount: this.noDeleteProtectionEnabled ? this.DELETION_TOOLS.size : undefined,
-            readOnlyToolCount: this.READ_ONLY_TOOLS.size,
+            noDeleteBlockedToolCount: this.protectionManager.isNoDeleteProtectionEnabled() ? this.protectionManager.getDeletionToolsCount() : undefined,
+            readOnlyToolCount: this.protectionManager.getReadOnlyToolsCount(),
           },
           cluster: {
             connected: false,
@@ -837,10 +636,9 @@ class K8sMcpServer {
         // If no enabled param, return current status
         if (enabled === undefined) {
           return {
-            protectionMode: this.infraProtectionEnabled ? "enabled" : "disabled",
-            destructiveToolsBlocked: this.infraProtectionEnabled ? Array.from(this.DESTRUCTIVE_TOOLS) : [],
-            destructiveToolsCount: this.DESTRUCTIVE_TOOLS.size,
-            message: this.infraProtectionEnabled 
+            protectionMode: this.protectionManager.isInfraProtectionEnabled() ? "enabled" : "disabled",
+            destructiveToolsCount: this.protectionManager.getDestructiveToolsCount(),
+            message: this.protectionManager.isInfraProtectionEnabled() 
               ? "Infrastructure Protection Mode is ENABLED. Destructive tools are blocked."
               : "Infrastructure Protection Mode is DISABLED. All tools are available - use with caution!",
           };
@@ -855,12 +653,11 @@ class K8sMcpServer {
               warning: "⚠️  DISABLING INFRASTRUCTURE PROTECTION IS DANGEROUS",
               message: "To disable protection mode, you must set 'confirm: true' to acknowledge the risk.",
               note: "When disabled, destructive operations like delete, drain, scale-down, and resource modifications will be allowed.",
-              destructiveToolsCount: this.DESTRUCTIVE_TOOLS.size,
-              destructiveTools: Array.from(this.DESTRUCTIVE_TOOLS),
+              destructiveToolsCount: this.protectionManager.getDestructiveToolsCount(),
             };
           }
           
-          this.infraProtectionEnabled = false;
+          this.protectionManager.setInfraProtection(false);
           console.error("⚠️  INFRASTRUCTURE PROTECTION MODE DISABLED - Destructive tools are now available");
           
           return {
@@ -868,19 +665,18 @@ class K8sMcpServer {
             protectionMode: "disabled",
             warning: "⚠️  Infrastructure Protection Mode is now DISABLED",
             message: "Destructive tools are now available. Use with extreme caution!",
-            destructiveToolsNowAvailable: Array.from(this.DESTRUCTIVE_TOOLS),
           };
         }
         
         // Enabling protection
-        this.infraProtectionEnabled = true;
+        this.protectionManager.setInfraProtection(true);
         console.error("Infrastructure Protection Mode ENABLED - Destructive tools are now blocked");
 
         return {
           success: true,
           protectionMode: "enabled",
           message: "Infrastructure Protection Mode is now ENABLED. Destructive tools are blocked.",
-          destructiveToolsBlocked: Array.from(this.DESTRUCTIVE_TOOLS),
+          destructiveToolsBlocked: this.protectionManager.getDestructiveToolsCount(),
         };
       },
     }]);
@@ -908,13 +704,14 @@ class K8sMcpServer {
       handler: async ({ enabled, confirm }: { enabled?: boolean; confirm?: boolean }) => {
         // If no enabled param, return current status
         if (enabled === undefined) {
-          const blockedTools = Array.from(this.toolRegistry.getAllTools().keys())
-            .filter(name => !this.READ_ONLY_TOOLS.has(name));
+          const allTools = Array.from(this.toolRegistry.getAllTools().keys());
+          const blockedToolsCount = allTools.filter(name => !this.protectionManager.isReadOnlyTool(name)).length;
+ 
           return {
-            strictProtectionMode: this.strictProtectionEnabled ? "enabled" : "disabled",
-            readOnlyToolsCount: this.READ_ONLY_TOOLS.size,
-            blockedToolsCount: blockedTools.length,
-            message: this.strictProtectionEnabled
+            strictProtectionMode: this.protectionManager.isStrictProtectionEnabled() ? "enabled" : "disabled",
+            readOnlyToolsAvailable: this.protectionManager.getReadOnlyToolsCount(),
+            blockedToolsCount: blockedToolsCount,
+            message: this.protectionManager.isStrictProtectionEnabled()
               ? "Strict Protection Mode is ENABLED. Only read-only/list operations are allowed."
               : "Strict Protection Mode is DISABLED. All tools are available - use with caution!",
           };
@@ -923,8 +720,8 @@ class K8sMcpServer {
         // Trying to disable strict protection
         if (!enabled) {
           if (!confirm) {
-            const blockedTools = Array.from(this.toolRegistry.getAllTools().keys())
-              .filter(name => !this.READ_ONLY_TOOLS.has(name));
+            const allTools = Array.from(this.toolRegistry.getAllTools().keys());
+            const blockedTools = allTools.filter(name => !this.protectionManager.isReadOnlyTool(name));
             return {
               success: false,
               strictProtectionMode: "enabled",
@@ -943,7 +740,7 @@ class K8sMcpServer {
             };
           }
 
-          this.strictProtectionEnabled = false;
+          this.protectionManager.setStrictProtection(false);
           console.error("⚠️  STRICT PROTECTION MODE DISABLED - All modification tools are now available");
 
           return {
@@ -955,17 +752,17 @@ class K8sMcpServer {
         }
 
         // Enabling strict protection
-        this.strictProtectionEnabled = true;
-        const blockedTools = Array.from(this.toolRegistry.getAllTools().keys())
-          .filter(name => !this.READ_ONLY_TOOLS.has(name));
+        this.protectionManager.setStrictProtection(true);
+        const allTools = Array.from(this.toolRegistry.getAllTools().keys());
+        const blockedToolsCount = allTools.filter(name => !this.protectionManager.isReadOnlyTool(name)).length;
         console.error("STRICT PROTECTION MODE ENABLED - Only read-only tools are now available");
 
         return {
           success: true,
           strictProtectionMode: "enabled",
           message: "Strict Protection Mode is now ENABLED. Only read-only/list operations are allowed.",
-          readOnlyToolsAvailable: this.READ_ONLY_TOOLS.size,
-          blockedToolsCount: blockedTools.length,
+          readOnlyToolsAvailable: this.protectionManager.getReadOnlyToolsCount(),
+          blockedToolsCount: blockedToolsCount,
           note: "This is the highest level of protection. No modifications to the cluster are possible.",
           allowedOperations: [
             "List resources (pods, deployments, nodes, services, etc.)",
@@ -1010,12 +807,11 @@ class K8sMcpServer {
         // If no enabled param, return current status
         if (enabled === undefined) {
           return {
-            noDeleteProtectionMode: this.noDeleteProtectionEnabled ? "enabled" : "disabled",
-            deleteToolsBlocked: this.DELETION_TOOLS.size,
-            message: this.noDeleteProtectionEnabled
+            noDeleteProtectionMode: this.protectionManager.isNoDeleteProtectionEnabled() ? "enabled" : "disabled",
+            deleteToolsBlocked: this.protectionManager.getDeletionToolsCount(),
+            message: this.protectionManager.isNoDeleteProtectionEnabled()
               ? "No Delete Protection Mode is ENABLED. Delete operations are blocked, but updates and modifications are allowed."
               : "No Delete Protection Mode is DISABLED. All operations including deletes are available.",
-            blockedDeleteOperations: this.noDeleteProtectionEnabled ? Array.from(this.DELETION_TOOLS) : [],
           };
         }
 
@@ -1028,12 +824,11 @@ class K8sMcpServer {
               warning: "⚠️  DISABLING NO-DELETE PROTECTION WILL ALLOW DELETION OF RESOURCES",
               message: "To disable no-delete protection mode, you must set 'confirm: true' to acknowledge the risk.",
               note: "When disabled, delete operations including pod deletion, namespace deletion, resource cleanup, and Helm uninstall will be allowed.",
-              deleteToolsCount: this.DELETION_TOOLS.size,
-              blockedDeleteOperations: Array.from(this.DELETION_TOOLS),
+              deleteToolsCount: this.protectionManager.getDeletionToolsCount(),
             };
           }
 
-          this.noDeleteProtectionEnabled = false;
+          this.protectionManager.setNoDeleteProtection(false);
           console.error("⚠️  NO DELETE PROTECTION MODE DISABLED - Delete operations are now available");
 
           return {
@@ -1045,14 +840,14 @@ class K8sMcpServer {
         }
 
         // Enabling no-delete protection
-        this.noDeleteProtectionEnabled = true;
+        this.protectionManager.setNoDeleteProtection(true);
         console.error("NO DELETE PROTECTION MODE ENABLED - Delete operations are now blocked");
 
         return {
           success: true,
           noDeleteProtectionMode: "enabled",
           message: "No Delete Protection Mode is now ENABLED. Delete operations are blocked, but updates and modifications are still allowed.",
-          deleteToolsBlocked: this.DELETION_TOOLS.size,
+          deleteToolsBlocked: this.protectionManager.getDeletionToolsCount(),
           note: "You can still create, update, scale, patch, and modify resources. Only delete and uninstall operations are blocked.",
           allowedOperations: [
             "Create resources (deployments, services, configmaps, secrets, etc.)",
@@ -1107,32 +902,31 @@ class K8sMcpServer {
           return {
             protectionModes: {
               infrastructure: {
-                enabled: this.infraProtectionEnabled,
+                enabled: this.protectionManager.isInfraProtectionEnabled(),
                 description: "Blocks destructive operations (delete, risky creates)",
-                toolCount: this.DESTRUCTIVE_TOOLS.size,
               },
               strict: {
-                enabled: this.strictProtectionEnabled,
+                enabled: this.protectionManager.isStrictProtectionEnabled(),
                 description: "Blocks ALL non-read-only operations (read-only mode)",
-                readOnlyToolCount: this.READ_ONLY_TOOLS.size,
+                readOnlyToolCount: this.protectionManager.getReadOnlyToolsCount(),
               },
               noDelete: {
-                enabled: this.noDeleteProtectionEnabled,
+                enabled: this.protectionManager.isNoDeleteProtectionEnabled(),
                 description: "Blocks only deletion operations (updates allowed)",
-                deleteToolCount: this.DELETION_TOOLS.size,
+                deleteToolCount: this.protectionManager.getDeletionToolsCount(),
               },
             },
             summary: {
-              totalProtected: (this.infraProtectionEnabled ? 1 : 0) + (this.strictProtectionEnabled ? 1 : 0) + (this.noDeleteProtectionEnabled ? 1 : 0),
-              mostRestrictiveActive: this.strictProtectionEnabled ? "strict" : this.infraProtectionEnabled ? "infrastructure" : this.noDeleteProtectionEnabled ? "noDelete" : "none",
+              totalProtected: (this.protectionManager.isInfraProtectionEnabled() ? 1 : 0) + (this.protectionManager.isStrictProtectionEnabled() ? 1 : 0) + (this.protectionManager.isNoDeleteProtectionEnabled() ? 1 : 0),
+              mostRestrictiveActive: this.protectionManager.isStrictProtectionEnabled() ? "strict" : this.protectionManager.isInfraProtectionEnabled() ? "infrastructure" : this.protectionManager.isNoDeleteProtectionEnabled() ? "noDelete" : "none",
             },
           };
         }
 
         // Check if trying to disable any protection without confirmation
-        const disablingInfra = infrastructure === false && this.infraProtectionEnabled;
-        const disablingStrict = strict === false && this.strictProtectionEnabled;
-        const disablingNoDelete = noDelete === false && this.noDeleteProtectionEnabled;
+        const disablingInfra = infrastructure === false && this.protectionManager.isInfraProtectionEnabled();
+        const disablingStrict = strict === false && this.protectionManager.isStrictProtectionEnabled();
+        const disablingNoDelete = noDelete === false && this.protectionManager.isNoDeleteProtectionEnabled();
 
         if ((disablingInfra || disablingStrict || disablingNoDelete) && !confirm) {
           const modesBeingDisabled: string[] = [];
@@ -1145,9 +939,9 @@ class K8sMcpServer {
             warning: `⚠️  DISABLING PROTECTION MODES: ${modesBeingDisabled.join(", ")}`,
             message: "To disable protection modes, you must set 'confirm: true' to acknowledge the risk.",
             currentStates: {
-              infrastructure: this.infraProtectionEnabled,
-              strict: this.strictProtectionEnabled,
-              noDelete: this.noDeleteProtectionEnabled,
+              infrastructure: this.protectionManager.isInfraProtectionEnabled(),
+              strict: this.protectionManager.isStrictProtectionEnabled(),
+              noDelete: this.protectionManager.isNoDeleteProtectionEnabled(),
             },
           };
         }
@@ -1156,22 +950,22 @@ class K8sMcpServer {
         const changes: string[] = [];
 
         // Apply Infrastructure Protection change
-        if (infrastructure !== undefined && infrastructure !== this.infraProtectionEnabled) {
-          this.infraProtectionEnabled = infrastructure;
+        if (infrastructure !== undefined && infrastructure !== this.protectionManager.isInfraProtectionEnabled()) {
+          this.protectionManager.setInfraProtection(infrastructure);
           changes.push(infrastructure ? "Infrastructure Protection ENABLED" : "Infrastructure Protection DISABLED");
           console.error(infrastructure ? "Infrastructure Protection Mode ENABLED - Destructive tools are now blocked" : "⚠️  INFRASTRUCTURE PROTECTION MODE DISABLED");
         }
 
         // Apply Strict Protection change
-        if (strict !== undefined && strict !== this.strictProtectionEnabled) {
-          this.strictProtectionEnabled = strict;
+        if (strict !== undefined && strict !== this.protectionManager.isStrictProtectionEnabled()) {
+          this.protectionManager.setStrictProtection(strict);
           changes.push(strict ? "Strict Protection ENABLED" : "Strict Protection DISABLED");
           console.error(strict ? "STRICT PROTECTION MODE ENABLED - Only read-only tools are now available" : "⚠️  STRICT PROTECTION MODE DISABLED");
         }
 
         // Apply No Delete Protection change
-        if (noDelete !== undefined && noDelete !== this.noDeleteProtectionEnabled) {
-          this.noDeleteProtectionEnabled = noDelete;
+        if (noDelete !== undefined && noDelete !== this.protectionManager.isNoDeleteProtectionEnabled()) {
+          this.protectionManager.setNoDeleteProtection(noDelete);
           changes.push(noDelete ? "No Delete Protection ENABLED" : "No Delete Protection DISABLED");
           console.error(noDelete ? "NO DELETE PROTECTION MODE ENABLED - Delete operations are now blocked" : "⚠️  NO DELETE PROTECTION MODE DISABLED");
         }
@@ -1183,9 +977,9 @@ class K8sMcpServer {
             changed: false,
             message: "No protection modes were changed (requested states match current states).",
             currentStates: {
-              infrastructure: this.infraProtectionEnabled,
-              strict: this.strictProtectionEnabled,
-              noDelete: this.noDeleteProtectionEnabled,
+              infrastructure: this.protectionManager.isInfraProtectionEnabled(),
+              strict: this.protectionManager.isStrictProtectionEnabled(),
+              noDelete: this.protectionManager.isNoDeleteProtectionEnabled(),
             },
           };
         }
@@ -1196,13 +990,13 @@ class K8sMcpServer {
           changes,
           message: `Protection modes updated: ${changes.join(", ")}`,
           currentStates: {
-            infrastructure: this.infraProtectionEnabled,
-            strict: this.strictProtectionEnabled,
-            noDelete: this.noDeleteProtectionEnabled,
+            infrastructure: this.protectionManager.isInfraProtectionEnabled(),
+            strict: this.protectionManager.isStrictProtectionEnabled(),
+            noDelete: this.protectionManager.isNoDeleteProtectionEnabled(),
           },
           summary: {
-            mostRestrictiveActive: this.strictProtectionEnabled ? "strict" : this.infraProtectionEnabled ? "infrastructure" : this.noDeleteProtectionEnabled ? "noDelete" : "none",
-            allModesDisabled: !this.infraProtectionEnabled && !this.strictProtectionEnabled && !this.noDeleteProtectionEnabled,
+            mostRestrictiveActive: this.protectionManager.isStrictProtectionEnabled() ? "strict" : this.protectionManager.isInfraProtectionEnabled() ? "infrastructure" : this.protectionManager.isNoDeleteProtectionEnabled() ? "noDelete" : "none",
+            allModesDisabled: !this.protectionManager.isInfraProtectionEnabled() && !this.protectionManager.isStrictProtectionEnabled() && !this.protectionManager.isNoDeleteProtectionEnabled(),
           },
         };
       },
@@ -1413,16 +1207,16 @@ class K8sMcpServer {
     }
     
     console.error(`Tools registered: ${this.toolRegistry.size()}`);
-    console.error(`Infrastructure Protection: ${this.infraProtectionEnabled ? "ENABLED" : "DISABLED"}`);
-    console.error(`Strict Protection: ${this.strictProtectionEnabled ? "ENABLED" : "DISABLED"}`);
-    if (this.strictProtectionEnabled) {
+    console.error(`Infrastructure Protection: ${this.protectionManager.isInfraProtectionEnabled() ? "ENABLED" : "DISABLED"}`);
+    console.error(`Strict Protection: ${this.protectionManager.isStrictProtectionEnabled() ? "ENABLED" : "DISABLED"}`);
+    if (this.protectionManager.isStrictProtectionEnabled()) {
       const blockedCount = Array.from(this.toolRegistry.getAllTools().keys())
-        .filter(name => !this.READ_ONLY_TOOLS.has(name)).length;
-      console.error(`  └─ ${blockedCount} modification tools blocked, ${this.READ_ONLY_TOOLS.size} read-only tools available`);
+        .filter(name => !this.protectionManager.isReadOnlyTool(name)).length;
+      console.error(`  └─ ${blockedCount} modification tools blocked, ${this.protectionManager.getReadOnlyToolsCount()} read-only tools available`);
     }
-    console.error(`No Delete Protection: ${this.noDeleteProtectionEnabled ? "ENABLED" : "DISABLED"}`);
-    if (this.noDeleteProtectionEnabled) {
-      console.error(`  └─ ${this.DELETION_TOOLS.size} delete operations blocked, updates still allowed`);
+    console.error(`No Delete Protection: ${this.protectionManager.isNoDeleteProtectionEnabled() ? "ENABLED" : "DISABLED"}`);
+    if (this.protectionManager.isNoDeleteProtectionEnabled()) {
+      console.error(`  └─ ${this.protectionManager.getDeletionToolsCount()} delete operations blocked, updates still allowed`);
     }
     console.error(`Started at: ${this.startTime.toISOString()}`);
   }

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.21.1 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.22.0 logo">
 </p>
 
 # k8s-helm-mcp
@@ -15,7 +15,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/meetpatel1111/k8s-helm-mcp)](https://github.com/meetpatel1111/k8s-helm-mcp/commits/main)
 [![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.21.1 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.22.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
 > **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
@@ -29,7 +29,7 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 
 ## Features
 
-### 260+ Kubernetes & Helm Management Tools
+### 262 Kubernetes & Helm Management Tools
 
 | Category | Tools |
 |----------|-------|
@@ -455,7 +455,7 @@ To integrate this server, add the configuration below to your `claude_desktop_co
 
 ## Tool Reference
 
-For a complete list of all 260+ tools and their kubectl equivalents, see **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)**.
+For a complete list of all 262 tools and their kubectl equivalents, see **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)**.
 
 ### Tool Categories
 
@@ -474,7 +474,7 @@ For a complete list of all 260+ tools and their kubectl equivalents, see **[TOOL
 | **Templates** | 4 | Resource templates |
 | **WebSocket** | 4 | Exec, attach, port-forward, logs |
 
-**Total: 170+ tools**
+**Total: 262 tools**
 
 ### Infrastructure Protection
 

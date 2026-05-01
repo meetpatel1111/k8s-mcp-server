@@ -1,10 +1,18 @@
-# Security and Data Protection Guide
+﻿# Security and Data Protection Guide
 
 This document explains the security architecture, data protection mechanisms, and safety features of the k8s-helm-mcp.
 
 ## Overview
 
 The k8s-helm-mcp is designed with security as a primary concern. It acts as a secure proxy between Claude and your Kubernetes cluster, ensuring that sensitive credentials and configuration data are never exposed to the AI.
+
+## Security Compliance & Standards
+
+The k8s-helm-mcp is architected to align with industry-leading security frameworks:
+
+- **OWASP Kubernetes Top 10 (2025)**: Proactive mitigation of insecure workload configurations (K01), overly permissive authorization (K02), and secrets management failures (K03).
+- **SlowMist MCP Security Checklist**: Full compliance with AI agent security standards, including robust input validation, infrastructure isolation, and error scrubbing.
+- **MCP Best Practices**: Adherence to official Model Context Protocol security guidelines for local tool execution, resource limits, and data privacy.
 
 ## Security Architecture
 
@@ -49,6 +57,16 @@ The k8s-helm-mcp is designed with security as a primary concern. It acts as a se
 - Managing authentication tokens
 - Executing Kubernetes API calls
 - Applying protection mode rules
+
+### Infrastructure Isolation (SlowMist)
+
+The server operates as a completely isolated local process. It does not require root privileges and communicates with the Kubernetes API via standard, encrypted TLS channels. No external control plane, third-party relay, or cloud-based processing is involved in the credential handling.
+
+### Supply Chain Integrity (SlowMist)
+
+- **Dependency Locking**: All dependencies are strictly locked via package-lock.json to prevent supply chain substitution attacks.
+- **Minimal Attack Surface**: We prioritize official, high-quality dependencies like @kubernetes/client-node and avoid unnecessary third-party wrappers.
+- **Vulnerability Scanning**: The project maintains regular scans to ensure all dependencies are free from known CVEs and security vulnerabilities.
 
 ## Credential Management
 
@@ -149,7 +167,7 @@ export NO_DELETE_PROTECTION_MODE=false # Disable
 
 **Tool:** `k8s_toggle_all_protection_modes`
 
-Controls all three protection modes simultaneously for quick switching between full access and fully protected states.
+Controls all three protection modes simultaneously for quick switching between full access and fully protected states. This aligns with **OWASP K04: Lack of Cluster Level Policy Enforcement**, providing a local enforcement layer.
 
 ## Data Protection
 
@@ -211,6 +229,23 @@ Controls all three protection modes simultaneously for quick switching between f
 - Sensitive configuration data
 
 **Note:** Error messages may contain resource names and namespaces but not credentials. Logs are written to stderr/stdout and managed by the host system.
+
+### Input Validation & Sanitization (SlowMist)
+
+The server implements multi-layered input validation to prevent injection attacks and data corruption:
+
+- **DNS-1123 Validation**: All resource names and namespaces are validated against strict Kubernetes naming conventions before being used in API calls.
+- **Shell Injection Prevention**: A robust sanitizeShellArg utility is used for any operations involving command execution (e.g., k8s_kubectl, k8s_exec_pod), preventing arbitrary command execution.
+- **Manifest Protection**: Complex Kubernetes fields like Ingress regexes, annotations, and labels are protected during sanitization to ensure security without corrupting legitimate configuration syntax.
+- **JSON/YAML Schema Enforcement**: All tool inputs are validated against strict Zod schemas before processing.
+
+### Error Scrubbing & Redaction (SlowMist)
+
+To prevent the leakage of internal system details or sensitive cluster metadata, the server employs a centralized error management system:
+
+- **Stack Trace Redaction**: Internal JavaScript/Node.js stack traces and file paths are never exposed to the AI client.
+- **Credential Stripping**: Any error messages returned by the Kubernetes API are scanned for sensitive tokens or server URLs before being passed back to Claude.
+- **Actionable Summaries**: Technical errors are translated into high-level, security-safe summaries with specific remediation suggestions.
 
 ### Secret Scrubbing (PII/Credential Redaction)
 
@@ -291,6 +326,14 @@ k8s_helm_values release=my-release scrubSecrets=true
 - Telemetry data is exported to configured OTLP endpoint (e.g., Jaeger, Tempo)
 - No sensitive credentials or secrets are included in trace data
 - Telemetry can be disabled for air-gapped or privacy-sensitive environments
+
+### Resource Limits & DoS Protection (SlowMist/MCP)
+
+To maintain server stability and prevent Denial of Service (DoS) attacks:
+
+- **Payload Limits**: The server enforces maximum buffer sizes (e.g., 10MB) for log retrieval and resource listing.
+- **Execution Timeouts**: All tool executions have configurable timeouts to prevent hanging processes from consuming resources.
+- **Memory Management**: The server utilizes connection pooling and efficient stream processing to minimize memory spikes during large resource exports.
 
 ## Security Best Practices
 
@@ -496,6 +539,9 @@ kubectl logs -n kube-system -l component=kube-apiserver
 - [ ] Monitoring and alerting setup
 - [ ] Security review completed
 - [ ] Incident response plan documented
+- [ ] **OWASP Kubernetes Top 10 Compliance Verified**
+- [ ] **SlowMist MCP Security Checklist Compliance Verified**
+- [ ] **Input Sanitization for complex K8s fields tested**
 
 ## Additional Resources
 

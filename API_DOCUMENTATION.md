@@ -2,13 +2,13 @@
 
 This document provides auto-generated API documentation for all Kubernetes and Helm tools.
 
-**Generated:** 2026-04-30T20:27:22.076Z
+**Generated:** 2026-05-01T15:30:06.169Z
 
 ## Summary
 
-- **Total Tools:** 259
-- **Categories:** 32
-- **Kubernetes Tools:** 13 categories
+- **Total Tools:** 262
+- **Categories:** 33
+- **Kubernetes Tools:** 14 categories
 - **Helm Tools:** 19 categories
 
 ## Table of Contents
@@ -25,6 +25,7 @@ This document provides auto-generated API documentation for all Kubernetes and H
 - [Templates Tools](#templates-tools) (2 tools)
 - [WebSocket Tools](#websocket-tools) (5 tools)
 - [Workloads Tools](#workloads-tools) (45 tools)
+- [Multi-Cluster Tools](#multi-cluster-tools) (3 tools)
 - [Advanced Tools](#advanced-tools) (26 tools)
 - [Helm Chart Management](#helm-chart-management) (5 tools)
 - [Helm Chart Template](#helm-chart-template) (1 tools)
@@ -2114,6 +2115,38 @@ Create a DaemonSet (like kubectl create daemonset). DaemonSets run a pod on ever
 - **hostNetwork** (booleanoptional) (default: false): Use host network namespace
 - **hostPID** (booleanoptional) (default: false): Use host PID namespace
 
+## Multi-Cluster Tools
+
+Operations across multiple clusters and contexts
+
+**Total Tools:** 3
+
+### k8s_list_kubeconfigs
+
+List available kubeconfig files and their contexts from common locations
+
+**Parameters:**
+
+- **includeDetails** (booleanoptional) (default: true): Include detailed context information (may slow down response for large configs)
+
+### k8s_switch_kubeconfig
+
+Switch to a different kubeconfig file. Sets KUBECONFIG_PATH environment variable and reloads the client configuration.
+
+**Parameters:**
+
+- **path** (string, required): Path to the kubeconfig file to switch to
+- **context** (stringoptional): Optional: Specific context to use within the kubeconfig (if not provided, uses current-context)
+
+### k8s_add_kubeconfig
+
+Add a new kubeconfig file path to the search list and optionally validate it
+
+**Parameters:**
+
+- **path** (string, required): Path to the kubeconfig file to add
+- **validate** (booleanoptional) (default: true): Validate the kubeconfig file exists and is valid
+
 ## Advanced Tools
 
 Advanced operations including batch processing and resource comparison
@@ -3152,21 +3185,3 @@ Show information about a Helm chart (like helm show chart/values/readme)
 - **insecureSkipTlsVerify** (booleanoptional) (default: false): Skip TLS certificate checks for the chart download
 - **passCredentials** (booleanoptional) (default: false): Pass credentials to all domains
 - **plainHttp** (booleanoptional) (default: false): Use insecure HTTP connections for the chart download
-
----
-
-## Project Documentation
-
-| Document | Description |
-|----------|-------------|
-| **[README.md](README.md)** | Main documentation - Quick start, features, and examples |
-| **[TOOLS_REFERENCE.md](TOOLS_REFERENCE.md)** | Complete tool reference with kubectl mappings and parameter details |
-| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Detailed API schemas and input/output examples |
-| **[SECURITY.md](SECURITY.md)** | Security features, input sanitization, and secret scrubbing |
-| **[PERFORMANCE_COMPARISON.md](PERFORMANCE_COMPARISON.md)** | Benchmarks and performance optimization details |
-| **[CLOUD_PROVIDER_LIMITATIONS.md](CLOUD_PROVIDER_LIMITATIONS.md)** | Cloud provider specific limitations (AKS, GKE, EKS) |
-| **[METRICS_SERVER.md](METRICS_SERVER.md)** | Metrics-server installation and configuration |
-| **[DOCKER_DESKTOP_GUIDE.md](DOCKER_DESKTOP_GUIDE.md)** | Docker Desktop Kubernetes setup guide |
-| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Contribution guidelines and development setup |
-| **[CHANGELOG.md](CHANGELOG.md)** | Release history and notable changes |
-| **[PRIVATE_REGISTRY_GUIDE.md](PRIVATE_REGISTRY_GUIDE.md)** | Private Helm and Docker registry configuration |

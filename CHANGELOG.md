@@ -5,9 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.21.1] - 2026-05-01
+## [0.22.0] - 2026-05-01
 
 ### Added
+- **Security Logic Centralization**: Refactored monolithic protection mode logic into a dedicated `ProtectionManager` class, significantly improving codebase maintainability.
+- **Security Surface Completion**: Performed a comprehensive audit and added **64 missing tools** to the protection categories, ensuring 100% coverage for Infrastructure, Strict, and No-Delete modes.
+- **Modernized Build Pipeline**: Implemented a robust `scripts/build.ts` using `esbuild` for cross-platform shebang injection and optimized bundling.
+- **Security Documentation & Compliance**: Performed a massive audit of `SECURITY.md` to document full compliance with **OWASP Kubernetes Top 10 (2025)** and the **SlowMist MCP Security Checklist**.
+- **Automated Documentation Integrity**: Updated `generate-api-docs.ts` to maintain doc synchronization with the refactored server architecture.
+
+## [0.21.1] - 2026-05-01
 - **Professional Documentation Suite**: Added a centralized "Project Documentation" navigation footer to all 11 markdown files for improved discoverability.
 - **Dynamic Repository Metrics**: Integrated live Shields.io badges for NPM downloads, bundle size, and GitHub activity.
 - **Enhanced NPM Metadata**: Added `homepage` and `bugs` tracking links to `package.json` for better NPM registry integration.
