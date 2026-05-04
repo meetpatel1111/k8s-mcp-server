@@ -70,6 +70,8 @@ export class ProtectionManager {
     "mcp_server_info", "mcp_health_check", "mcp_tool_metrics",
     "k8s_toggle_protection_mode", "k8s_toggle_strict_protection_mode", "k8s_toggle_no_delete_mode",
     "k8s_toggle_all_protection_modes",
+    // SRE tools
+    "k8s_incident_snapshot",
   ]);
 
   // Infrastructure Protection Mode - blocks destructive operations
