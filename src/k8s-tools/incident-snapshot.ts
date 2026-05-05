@@ -210,10 +210,10 @@ interface IncidentSnapshot {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (exported for testing)
 // ---------------------------------------------------------------------------
 
-function parseDurationSeconds(s: string): number {
+export function parseDurationSeconds(s: string): number {
   const m = /^(\d+)(s|m|h|d)$/.exec(s);
   if (!m) return 15 * 60;
   const n = Number(m[1]);
@@ -231,7 +231,7 @@ function parseDurationSeconds(s: string): number {
   }
 }
 
-function ageFrom(date: Date | string | undefined): string {
+export function ageFrom(date: Date | string | undefined): string {
   if (!date) return "unknown";
   const t = typeof date === "string" ? new Date(date) : date;
   const ms = Date.now() - t.getTime();
@@ -245,7 +245,7 @@ function ageFrom(date: Date | string | undefined): string {
   return `${Math.floor(h / 24)}d${h % 24}h`;
 }
 
-function classifyPodFailure(pod: k8s.V1Pod): {
+export function classifyPodFailure(pod: k8s.V1Pod): {
   mode: string;
   reason: string;
   restartCount: number;
@@ -279,6 +279,9 @@ function classifyPodFailure(pod: k8s.V1Pod): {
     };
   }
   for (const c of allStatuses) {
+    if (c.lastState?.terminated?.reason === "OOMKilled") {
+      return { mode: "OOMKilled", reason: "OOMKilled", restartCount };
+    }
     const w = c.state?.waiting;
     if (w?.reason === "CrashLoopBackOff") {
       return {
@@ -289,9 +292,6 @@ function classifyPodFailure(pod: k8s.V1Pod): {
     }
     if (w?.reason === "ImagePullBackOff" || w?.reason === "ErrImagePull") {
       return { mode: "ImagePullBackOff", reason: w.reason, restartCount };
-    }
-    if (c.lastState?.terminated?.reason === "OOMKilled") {
-      return { mode: "OOMKilled", reason: "OOMKilled", restartCount };
     }
   }
   if (phase === "Failed") {
@@ -677,10 +677,10 @@ async function collectControlPlane(
 }
 
 // ---------------------------------------------------------------------------
-// Severity scoring
+// Severity scoring (exported for testing)
 // ---------------------------------------------------------------------------
 
-function computeSummary(snap: IncidentSnapshot): IncidentSnapshot["summary"] {
+export function computeSummary(snap: IncidentSnapshot): IncidentSnapshot["summary"] {
   const flags: string[] = [];
   let severity: "green" | "yellow" | "red" = "green";
 

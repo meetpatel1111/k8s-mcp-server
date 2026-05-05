@@ -2,13 +2,13 @@
 
 This document provides auto-generated API documentation for all Kubernetes and Helm tools.
 
-**Generated:** 2026-05-05T07:08:09.295Z
+**Generated:** 2026-05-05T09:18:01.388Z
 
 ## Summary
 
-- **Total Tools:** 262
-- **Categories:** 33
-- **Kubernetes Tools:** 14 categories
+- **Total Tools:** 268
+- **Categories:** 35
+- **Kubernetes Tools:** 16 categories
 - **Helm Tools:** 19 categories
 
 ## Table of Contents
@@ -26,7 +26,9 @@ This document provides auto-generated API documentation for all Kubernetes and H
 - [WebSocket Tools](#websocket-tools) (5 tools)
 - [Workloads Tools](#workloads-tools) (45 tools)
 - [Multi-Cluster Tools](#multi-cluster-tools) (3 tools)
+- [SRE Tools](#sre-tools) (2 tools)
 - [Advanced Tools](#advanced-tools) (26 tools)
+- [Server Management](#server-management) (4 tools)
 - [Helm Chart Management](#helm-chart-management) (5 tools)
 - [Helm Chart Template](#helm-chart-template) (1 tools)
 - [Helm Dependency Management](#helm-dependency-management) (1 tools)
@@ -2147,6 +2149,37 @@ Add a new kubeconfig file path to the search list and optionally validate it
 - **path** (string, required): Path to the kubeconfig file to add
 - **validate** (booleanoptional) (default: true): Validate the kubeconfig file exists and is valid
 
+## SRE Tools
+
+SRE diagnostic and cluster state change tracking tools
+
+**Total Tools:** 2
+
+### k8s_incident_snapshot
+
+First-minute SRE triage in one call. Returns unhealthy pods grouped by failure mode (CrashLoopBackOff, ImagePullBackOff, OOMKilled, Pending, Evicted), recent warning events grouped by reason, active and stuck rollouts, node pressure (Ready/MemoryPressure/DiskPressure/PIDPressure), and control-plane health (failing webhooks and unavailable APIServices). Output includes a severity headline (green/yellow/red). Read-only and safe under all protection modes.
+
+**Parameters:**
+
+- **namespace** (stringoptional): Limit pod, event, and rollout collection to a single namespace. Omit for cluster-wide scope. Control-plane checks always run cluster-wide unless includeControlPlane is false.
+- **since** (stringoptional) (default: "15m"): Time window for events and rollout staleness, e.g. '5m', '15m', '1h', '24h'. Defaults to '15m'.
+- **includeControlPlane** (booleanoptional): Whether to check failing webhooks and unavailable APIServices. Defaults to true when scope is cluster-wide, false when a namespace is specified.
+- **maxEvents** (numberoptional) (default: 20): Maximum number of distinct event reasons to return in topReasons. Defaults to 20.
+- **maxPodsPerCategory** (numberoptional) (default: 10): Maximum example pods returned per failure-mode group. Defaults to 10.
+
+### k8s_changes_since
+
+Returns a time-windowed diff of cluster state. Lists resources created, modified, or being deleted within the window across 9 kinds (Deployment, StatefulSet, DaemonSet, ConfigMap, Secret, RoleBinding, ClusterRoleBinding, HorizontalPodAutoscaler, Service), with who-did-what attribution from managedFields. Also includes scaling and configuration events. Use during incident triage to answer 'what changed?'. Read-only and safe under all protection modes.
+
+**Parameters:**
+
+- **since** (stringoptional) (default: "1h"): Time window for changes, e.g. '5m', '15m', '1h', '24h'. Defaults to '1h'.
+- **namespace** (stringoptional): Limit to a single namespace. Omit for cluster-wide scope.
+- **kinds** (arrayoptional): Filter to specific resource kinds. Omit to scan all 9 supported kinds.
+  Items: string
+- **maxResults** (numberoptional) (default: 50): Maximum number of resource changes to return. Defaults to 50.
+- **includeEvents** (booleanoptional) (default: true): Whether to include relevant cluster events (scaling, image updates, etc.). Defaults to true.
+
 ## Advanced Tools
 
 Advanced operations including batch processing and resource comparison
@@ -2434,6 +2467,46 @@ Start a proxy server to the Kubernetes API (like kubectl proxy)
 - **apiPrefix** (stringoptional) (default: "/"): API prefix path
 - **staticDir** (stringoptional): Directory to serve static files from
 - **disableFilter** (booleanoptional) (default: false): Disable request filtering
+
+## Server Management
+
+Internal MCP server status, metrics, and lifecycle management
+
+**Total Tools:** 4
+
+### k8s_server_info
+
+Get comprehensive MCP server information and status
+
+**Parameters:**
+
+- **includeMetrics** (booleanoptional) (default: false): Include detailed tool metrics
+
+### k8s_server_health
+
+Comprehensive health check with diagnostics
+
+**Parameters:**
+
+- **deep** (booleanoptional) (default: false): Perform deep health check including cluster connectivity
+- **timeout** (numberoptional) (default: 10): Health check timeout in seconds
+
+### k8s_server_metrics
+
+Get detailed tool usage metrics
+
+**Parameters:**
+
+- **tool** (stringoptional): Specific tool name (optional, shows all if not specified)
+- **sortBy** (stringoptional) (default: "calls") [enum: calls, errors, avgResponseTime]: Sort metrics by field
+
+### k8s_server_stop
+
+Shut down the MCP server gracefully
+
+**Parameters:**
+
+- **confirm** (boolean, required) (default: false): Confirmation flag to prevent accidental shutdown
 
 ## Helm Chart Management
 

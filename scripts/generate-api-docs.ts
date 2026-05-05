@@ -23,6 +23,8 @@ import { registerTemplateTools } from '../src/k8s-tools/templates.js';
 import { registerWebSocketTools } from '../src/k8s-tools/websocket.js';
 import { registerWorkloadTools } from '../src/k8s-tools/workloads.js';
 import { registerAdvancedTools } from '../src/k8s-tools/advanced.js';
+import { registerIncidentSnapshotTools } from '../src/k8s-tools/incident-snapshot.js';
+import { registerChangesSinceTools } from '../src/k8s-tools/changes-since.js';
 import { registerMultiClusterTools } from '../src/k8s-tools/multi-cluster.js';
 
 import { registerHelmChartManagementTools } from '../src/helm-tools/chart-management.js';
@@ -188,7 +190,92 @@ function generateApiDocs(): string {
     { name: 'WebSocket Tools', register: registerWebSocketTools, description: 'Real-time streaming, exec, and port forwarding' },
     { name: 'Workloads Tools', register: registerWorkloadTools, description: 'Deployments, StatefulSets, DaemonSets, Jobs, and CronJobs' },
     { name: 'Multi-Cluster Tools', register: registerMultiClusterTools, description: 'Operations across multiple clusters and contexts' },
+    { name: 'SRE Tools', register: (client: any) => [...registerIncidentSnapshotTools(client), ...registerChangesSinceTools(client)], description: 'SRE diagnostic and cluster state change tracking tools' },
     { name: 'Advanced Tools', register: registerAdvancedTools, description: 'Advanced operations including batch processing and resource comparison' },
+    { name: 'Server Management', register: (client: any) => {
+      // Manual registration for server-internal tools
+      return [
+        {
+          tool: {
+            name: "k8s_server_info",
+            description: "Get comprehensive MCP server information and status",
+            inputSchema: {
+              type: "object",
+              properties: {
+                includeMetrics: {
+                  type: "boolean",
+                  description: "Include detailed tool metrics",
+                  default: false,
+                },
+              },
+            },
+          },
+          handler: () => {}
+        },
+        {
+          tool: {
+            name: "k8s_server_health",
+            description: "Comprehensive health check with diagnostics",
+            inputSchema: {
+              type: "object",
+              properties: {
+                deep: {
+                  type: "boolean",
+                  description: "Perform deep health check including cluster connectivity",
+                  default: false,
+                },
+                timeout: {
+                  type: "number",
+                  description: "Health check timeout in seconds",
+                  default: 10,
+                },
+              },
+            },
+          },
+          handler: () => {}
+        },
+        {
+          tool: {
+            name: "k8s_server_metrics",
+            description: "Get detailed tool usage metrics",
+            inputSchema: {
+              type: "object",
+              properties: {
+                tool: {
+                  type: "string",
+                  description: "Specific tool name (optional, shows all if not specified)",
+                },
+                sortBy: {
+                  type: "string",
+                  description: "Sort metrics by field",
+                  enum: ["calls", "errors", "avgResponseTime"],
+                  default: "calls",
+                },
+              },
+            },
+          },
+          handler: () => {}
+        },
+        {
+          tool: {
+            name: "k8s_server_stop",
+            description: "Shut down the MCP server gracefully",
+            inputSchema: {
+              type: "object",
+              properties: {
+                confirm: {
+                  type: "boolean",
+                  description: "Confirmation flag to prevent accidental shutdown",
+                  default: false,
+                },
+              },
+              required: ["confirm"],
+            },
+          },
+          handler: () => {}
+        }
+      ];
+    }, description: 'Internal MCP server status, metrics, and lifecycle management' },
   ];
 
   for (const cat of k8sCategories) {

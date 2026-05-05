@@ -110,7 +110,7 @@ class K8sMcpServer {
   // Per-tool timeout overrides (ms)
   private readonly TOOL_TIMEOUTS: Record<string, number> = {
     "k8s_cluster_info_dump": 120000,
-    "k8s_health_score": 60000,
+    "k8s_server_health": 60000,
     "k8s_analyze_pod_failure": 60000,
     "k8s_suggest_optimizations": 60000,
     "k8s_debug_scheduling": 45000,
@@ -418,7 +418,7 @@ class K8sMcpServer {
     // Server info tool
     this.registerTools([{
       tool: {
-        name: "mcp_server_info",
+        name: "k8s_server_info",
         description: "Get comprehensive MCP server information and status",
         inputSchema: {
           type: "object",
@@ -478,7 +478,7 @@ class K8sMcpServer {
     // Enhanced health check
     this.registerTools([{
       tool: {
-        name: "mcp_health_check",
+        name: "k8s_server_health",
         description: "Comprehensive health check with diagnostics",
         inputSchema: {
           type: "object",
@@ -571,7 +571,7 @@ class K8sMcpServer {
     // Tool metrics
     this.registerTools([{
       tool: {
-        name: "mcp_tool_metrics",
+        name: "k8s_server_metrics",
         description: "Get detailed tool usage metrics",
         inputSchema: {
           type: "object",
@@ -612,6 +612,50 @@ class K8sMcpServer {
             totalCalls: metrics.reduce((sum, m) => sum + m.calls, 0),
             totalErrors: metrics.reduce((sum, m) => sum + m.errors, 0),
           },
+        };
+      },
+    }]);
+
+    // Server stop tool
+    this.registerTools([{
+      tool: {
+        name: "k8s_server_stop",
+        description: "Shut down the MCP server gracefully. This will terminate the process and stop the server from accepting further requests. Use with caution.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            confirm: {
+              type: "boolean",
+              description: "Confirmation flag to prevent accidental shutdown",
+              default: false,
+            },
+          },
+          required: ["confirm"],
+        },
+      },
+      handler: async ({ confirm }: { confirm: boolean }) => {
+        if (!confirm) {
+          return {
+            success: false,
+            message: "Shutdown rejected. You must set 'confirm: true' to acknowledge the action.",
+          };
+        }
+
+        console.error("Shutdown requested via k8s_server_stop. Terminating in 2 seconds...");
+        
+        // Start shutdown sequence asynchronously to allow response to be sent
+        setTimeout(async () => {
+          if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
+          if (this.circuitBreakerTimer) clearTimeout(this.circuitBreakerTimer);
+          await shutdownTelemetry();
+          process.exit(0);
+        }, 2000);
+
+        return {
+          success: true,
+          message: "Server shutdown initiated. The process will terminate in 2 seconds.",
+          uptime: this.getUptime(),
+          startTime: this.startTime.toISOString(),
         };
       },
     }]);

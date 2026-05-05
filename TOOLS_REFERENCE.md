@@ -1,6 +1,6 @@
 # K8s MCP Server - Complete Tool Reference
 
-**Version: 0.22.1** | **Total Tools: 262+**
+**Version: 0.25.0** | **Total Tools: 265**
 
 This document provides comprehensive reference for all tools in the Kubernetes MCP Server, including tool catalogs, kubectl mappings, and natural language patterns.
 
@@ -46,9 +46,10 @@ This document provides comprehensive reference for all tools in the Kubernetes M
 
 | Tool | Description | Key Features |
 |------|-------------|--------------|
-| `mcp_server_info` | Get comprehensive MCP server information and status | Returns server version, uptime, tool count, cluster info, error/request counts, protection mode status |
-| `mcp_health_check` | Comprehensive health check with cluster connectivity test | Checks server health, cluster connectivity (optional deep check), circuit breaker status, protection modes |
-| `mcp_tool_metrics` | Get detailed tool usage metrics | Returns per-tool call counts, error rates, average response times, last called timestamps |
+| `k8s_server_info` | Get comprehensive MCP server information and status | Returns server version, uptime, tool count, cluster info, error/request counts, protection mode status |
+| `k8s_server_health` | Comprehensive health check with cluster connectivity test | Checks server health, cluster connectivity (optional deep check), circuit breaker status, protection modes |
+| `k8s_server_metrics` | Get detailed tool usage metrics | Returns per-tool call counts, error rates, average response times, last called timestamps |
+| `k8s_server_stop` | Shut down the MCP server gracefully | Programmatic termination of the server process with confirmation |
 
 ### Cluster & Context Management
 
@@ -303,6 +304,8 @@ This document provides comprehensive reference for all tools in the Kubernetes M
 | `k8s_container_image_report` | Report on all container images used in the cluster | `namespace?`, `filter?` |
 | `k8s_suggest_optimizations` | Analyze resources and suggest optimizations | `namespace?` |
 | `k8s_analyze_pod_failure` | AI-style diagnosis of why a pod is failing | `name`, `namespace?` |
+| `k8s_incident_snapshot` | Collect SRE triage data (Pods, Events, Rollouts, Nodes) for rapid incident response | `namespace?`, `limit?`, `includeNodes?` |
+| `k8s_changes_since` | Get time-windowed diff of cluster resource changes with attribution | `since` (duration), `namespace?`, `resourceTypes?` |
 | `k8s_get_pod_metrics` | Get pod metrics (CPU/Memory) - requires metrics-server | `name?`, `namespace?` |
 | `k8s_get_node_metrics` | Get node metrics (CPU/Memory) - requires metrics-server | `name?` |
 | `k8s_top_pod` | Display resource usage (CPU/Memory) for pods | `name?`, `namespace?`, `allNamespaces?: boolean`, `containers?: boolean`, `sortBy?` |
@@ -935,14 +938,14 @@ All tools starting with `k8s_delete_`, `k8s_bulk_delete_`, `k8s_helm_uninstall`,
 | Storage Management | 11 |
 | Security & RBAC | 28 |
 | Configuration & Secrets | 14 |
-| Monitoring & Observability | 15 |
+| Monitoring & Observability | 17 |
 | Helm Tools | 40 |
 | Advanced & Diagnostic | 44 |
-| **Total** | **260+** |
+| **Total** | **264** |
 
 ---
 
-*Generated for k8s-helm-mcp v0.22.1*
+*Generated for k8s-helm-mcp v0.24.0*
 
 ---
 

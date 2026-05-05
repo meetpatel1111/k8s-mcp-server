@@ -134,6 +134,7 @@ export class K8sClient {
   private networkingV1Api: k8s.NetworkingV1Api;
   private storageV1Api: k8s.StorageV1Api;
   private rbacV1Api: k8s.RbacAuthorizationV1Api;
+  private autoscalingV2Api: k8s.AutoscalingV2Api;
   private requestTimeout: number = 30000; // 30 seconds default
   private retryAttempts: number = 3;
   private httpsAgent!: https.Agent;
@@ -163,6 +164,7 @@ export class K8sClient {
       this.networkingV1Api = this._kc.makeApiClient(k8s.NetworkingV1Api);
       this.storageV1Api = this._kc.makeApiClient(k8s.StorageV1Api);
       this.rbacV1Api = this._kc.makeApiClient(k8s.RbacAuthorizationV1Api);
+      this.autoscalingV2Api = this._kc.makeApiClient(k8s.AutoscalingV2Api);
     } catch (error) {
       const context: ErrorContext = { operation: "initializeApiClients" };
       throw classifyError(error, context);
@@ -423,6 +425,7 @@ export class K8sClient {
     this.networkingV1Api = this._kc.makeApiClient(k8s.NetworkingV1Api);
     this.storageV1Api = this._kc.makeApiClient(k8s.StorageV1Api);
     this.rbacV1Api = this._kc.makeApiClient(k8s.RbacAuthorizationV1Api);
+    this.autoscalingV2Api = this._kc.makeApiClient(k8s.AutoscalingV2Api);
   }
 
   /**
@@ -506,6 +509,10 @@ export class K8sClient {
 
   getRbacV1Api(): k8s.RbacAuthorizationV1Api {
     return this.rbacV1Api;
+  }
+
+  getAutoscalingV2Api(): k8s.AutoscalingV2Api {
+    return this.autoscalingV2Api;
   }
 
   async listNodes(): Promise<k8s.V1Node[]> {
@@ -802,10 +809,6 @@ export class K8sClient {
   }
 
   // Services
-
-  /**
-   * List services in a namespace or across all namespaces
-   * @param namespace - Optional namespace filter
 
   /**
    * List services in a namespace or across all namespaces

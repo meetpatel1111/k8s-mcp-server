@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.22.1 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.25.0 logo">
 </p>
 
 # k8s-helm-mcp
@@ -15,7 +15,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/meetpatel1111/k8s-helm-mcp)](https://github.com/meetpatel1111/k8s-helm-mcp/commits/main)
 [![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.22.1 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.25.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
 > **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
@@ -29,7 +29,7 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 
 ## Features
 
-### 262 Kubernetes & Helm Management Tools
+### 265 Kubernetes & Helm Management Tools
 
 | Category | Tools |
 |----------|-------|
@@ -40,11 +40,11 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 | **Networking** | Services, endpoints, ingresses, network policies, DNS test, service topology |
 | **Storage** | PersistentVolumes, PVCs, StorageClasses, unbound PVC detection, storage summary |
 | **Security & RBAC** | ServiceAccounts, Roles, ClusterRoles, RoleBindings, ClusterRoleBindings, Secrets, ConfigMaps, privileged pod detection, certificates, **Secret Scrubbing** (PII/credential redaction) |
-| **Monitoring** | Events, resource quotas, limit ranges, crash loop detection, pod/node metrics, health score, optimization suggestions |
+| **Monitoring & SRE** | Events, **SRE Incident Snapshot**, **Cluster Changes Since**, resource quotas, limit ranges, crash loop detection, pod/node metrics, health score, optimization suggestions |
 | **Configuration** | Apply manifests, export YAML, validate manifests, namespace management, patch, edit, diff, wait, watch |
 | **Advanced** | Raw API queries, pod failure analysis, bulk operations, orphaned resource detection, resource age reports |
 | **Helm** | 40+ tools for releases, charts, repos, plugins, registry (install, upgrade, rollback, lint, template, search) |
-| **Server Management** | Server info, health checks, tool metrics, protection mode toggles |
+| **Server Management** | Server info, health checks, tool metrics, graceful stop, protection mode toggles |
 
 ## Quick Start
 
@@ -506,7 +506,7 @@ For a complete list of all 262 tools and their kubectl equivalents, see **[TOOLS
 | **Templates** | 4 | Resource templates |
 | **WebSocket** | 4 | Exec, attach, port-forward, logs |
 
-**Total: 262 tools**
+**Total: 264 tools**
 
 ### Infrastructure Protection
 
@@ -1134,7 +1134,7 @@ A:
 
 **Q: Tools are blocked by protection mode**
 A: 
-1. Check current protection status with `mcp_server_info`
+1. Check current protection status with `k8s_server_info`
 2. Temporarily disable: `k8s_toggle_protection_mode { enabled: false, confirm: true }`
 3. Or use the appropriate protection mode for your use case
 

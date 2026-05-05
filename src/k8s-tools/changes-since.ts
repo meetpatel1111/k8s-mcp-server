@@ -410,15 +410,11 @@ async function collectResourceChanges(
       );
     }
 
-    // RBAC and HPA APIs accessed via kc.makeApiClient to avoid depending on
-    // K8sClient having bespoke wrappers for these. The kc field is the
-    // standard KubeConfig instance every K8sClient holds.
-    const kc = (k8sClient as any).kc as k8s.KubeConfig | undefined;
-    if (kc && want("RoleBinding")) {
+    if (want("RoleBinding")) {
       tasks.push(
         (async () => {
           try {
-            const rbac = kc.makeApiClient(k8s.RbacAuthorizationV1Api);
+            const rbac = k8sClient.getRbacV1Api();
             const list = namespace
               ? await rbac.listNamespacedRoleBinding({ namespace })
               : await rbac.listRoleBindingForAllNamespaces();
@@ -432,11 +428,11 @@ async function collectResourceChanges(
         })(),
       );
     }
-    if (kc && want("ClusterRoleBinding")) {
+    if (want("ClusterRoleBinding")) {
       tasks.push(
         (async () => {
           try {
-            const rbac = kc.makeApiClient(k8s.RbacAuthorizationV1Api);
+            const rbac = k8sClient.getRbacV1Api();
             const list = await rbac.listClusterRoleBinding();
             for (const r of list.items) {
               const ch = changeFromMeta(
@@ -453,11 +449,11 @@ async function collectResourceChanges(
         })(),
       );
     }
-    if (kc && want("HorizontalPodAutoscaler")) {
+    if (want("HorizontalPodAutoscaler")) {
       tasks.push(
         (async () => {
           try {
-            const hpa = kc.makeApiClient(k8s.AutoscalingV2Api);
+            const hpa = k8sClient.getAutoscalingV2Api();
             const list = namespace
               ? await hpa.listNamespacedHorizontalPodAutoscaler({ namespace })
               : await hpa.listHorizontalPodAutoscalerForAllNamespaces();

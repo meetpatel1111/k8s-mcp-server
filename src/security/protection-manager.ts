@@ -67,7 +67,7 @@ export class ProtectionManager {
     "k8s_helm_template", "k8s_helm_env", "k8s_helm_version",
     "k8s_helm_plugin_list", "k8s_helm_verify", "k8s_helm_lint",
     // Server tools
-    "mcp_server_info", "mcp_health_check", "mcp_tool_metrics",
+    "k8s_server_info", "k8s_server_health", "k8s_server_metrics", "k8s_server_stop",
     "k8s_toggle_protection_mode", "k8s_toggle_strict_protection_mode", "k8s_toggle_no_delete_mode",
     "k8s_toggle_all_protection_modes",
     // SRE tools
