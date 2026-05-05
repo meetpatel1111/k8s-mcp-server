@@ -73,6 +73,7 @@ export class ProtectionManager {
     // SRE tools
     "k8s_incident_snapshot",
     "k8s_changes_since",
+    "k8s_blast_radius",
   ]);
 
   // Infrastructure Protection Mode - blocks destructive operations

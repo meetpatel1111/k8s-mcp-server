@@ -18,6 +18,7 @@ import { registerMonitoringTools } from "./k8s-tools/monitoring.js";
 import { registerConfigTools } from "./k8s-tools/config.js";
 import { registerIncidentSnapshotTools } from "./k8s-tools/incident-snapshot.js";
 import { registerChangesSinceTools } from "./k8s-tools/changes-since.js";
+import { registerBlastRadiusTools } from "./k8s-tools/blast-radius.js";
 import { registerAdvancedTools } from "./k8s-tools/advanced.js";
 import { registerTemplateTools } from "./k8s-tools/templates.js";
 import { registerWebSocketTools } from "./k8s-tools/websocket.js";
@@ -203,6 +204,7 @@ class K8sMcpServer {
       this.registerTools(registerConfigTools(this.k8sClient));
       this.registerTools(registerIncidentSnapshotTools(this.k8sClient));
       this.registerTools(registerChangesSinceTools(this.k8sClient));
+      this.registerTools(registerBlastRadiusTools(this.k8sClient));
       this.registerTools(registerAdvancedTools(this.k8sClient, this.cacheManager));
       this.registerTools(registerTemplateTools(this.k8sClient));
       this.registerTools(registerWebSocketTools(this.k8sClient));
