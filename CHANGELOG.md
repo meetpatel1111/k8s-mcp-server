@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.1] - 2026-05-06
+
+### Added
+- **Multi-Platform Proliferation**: Standardized and optimized documentation for **Gemini CLI**, **Claude Code**, **Codex CLI**, **Antigravity**, **VS Code / GitHub Copilot**, **Cursor**, and **Windsurf**.
+- **Gemini CLI Optimization**: Added support for hierarchical scopes (User/Project), automated trust workflows (`gemini trust`), and safety-first CLI syntax using the `--` argument separator.
+- **Antigravity Interoperability**: Documented the managed configuration ecosystem for Antigravity and added a comparison guide for users running both IDE and CLI tools.
+- **VS Code Native Support**: Fully documented the `mcp.json` native integration for GitHub Copilot, including workspace-level configurations (`.vscode/mcp.json`) for team sharing.
+- **Branding**: Updated visual identity with high-fidelity "Works with" badges for Gemini CLI, Claude Code, and Codex CLI.
+
+### Fixed
+- **Naming Consistency**: Standardized server identifiers to `k8s-helm-mcp` (CLI) and `k8sHelm` (VS Code) across all supported environments to ensure persistent connectivity.
+- **Configuration Duplication**: Consolidated overlapping integration options and re-ordered the guide into a logical, sequential 10-option workflow.
+
 ## [0.26.0] - 2026-05-05
 
 ### Added

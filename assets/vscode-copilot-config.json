@@ -1,16 +1,9 @@
 {
-  "//": "Note: For EKS/GKE/AKS, ensure your local CLI (aws/gcloud/az) is authenticated.",
   "servers": {
-    "k8s-helm-mcp": {
+    "k8sHelm": {
+      "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "k8s-helm-mcp"
-      ],
-      "env": {
-        "KUBECONFIG": "C:\\Users\\yourname\\.kube\\config",
-        "STRICT_PROTECTION_MODE": "true"
-      }
+      "args": ["-y", "k8s-helm-mcp@latest"]
     }
   }
 }

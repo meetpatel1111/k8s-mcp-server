@@ -1,6 +1,6 @@
 {
   "name": "k8s-helm-mcp",
-  "version": "0.26.0",
+  "version": "0.26.1",
   "description": "Production-grade Kubernetes MCP Server - Complete kubectl coverage with Infrastructure Protection, Helm support, Diagnostics, Response Caching, 265 tools, Direct Exec, OpenTelemetry",
   "type": "module",
   "main": "dist/index.js",
