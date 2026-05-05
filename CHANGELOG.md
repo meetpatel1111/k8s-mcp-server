@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-05-05
+
+### Added
+- **Multi-Client Integration**: Added native support and documentation for **Codex** (OpenAI), **Windsurf** (Codeium), **Antigravity** (Google DeepMind), **Cursor**, and **GitHub Copilot (VS Code)**.
+- **Configuration Templates**: Created standalone configuration templates for all supported clients in the `assets/` directory with embedded path guidance and cloud auth reminders:
+    - `assets/claude-desktop-config.json`
+    - `assets/codex-config.toml`
+    - `assets/windsurf-config.json`
+    - `assets/antigravity-config.json`
+    - `assets/cursor-config.json`
+    - `assets/vscode-copilot-config.json`
+- **Branding & Visual Identity**: 
+    - Added official "Works with" badges for all new supported clients to the README.
+    - Integrated a **high-resolution 7-spoked hybrid logo** into the server's visual identity, now visible in IDE connector UIs (Claude Desktop, etc.) via `iconUrl` metadata.
+- **Cloud Provider Error Handling**: Integrated smart detection for **EKS (AWS)**, **GKE (Google)**, and **AKS (Azure)** authentication failures, providing actionable login commands and CLI installation links directly in tool error responses.
+- **Proactive CLI Checks**: Added detection for missing cloud CLIs (`aws`, `gcloud`, `az`) when used as authentication plugins, with platform-specific recovery guidance.
+
 ## [0.25.0] - 2026-05-05
 
 ### Added

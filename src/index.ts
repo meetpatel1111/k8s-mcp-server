@@ -54,6 +54,7 @@ import { auditLogger } from "./audit-logger.js";
 import { sanitizeInputArgs } from "./utils/input-sanitizer.js";
 import { validateNamespace, validateResourceName } from "./validators.js";
 import { ProtectionManager } from "./security/protection-manager.js";
+import { LOGO_BASE64 } from "./assets/logo-base64.js";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
@@ -168,6 +169,12 @@ class K8sMcpServer {
       {
         name: "k8s-helm-mcp",
         version: packageJson.version,
+        icons: [
+          {
+            src: LOGO_BASE64,
+            mimeType: "image/png"
+          }
+        ]
       },
       {
         capabilities: {

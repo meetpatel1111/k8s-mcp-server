@@ -66,9 +66,39 @@ AKS API server may reject strategic merge patch requests in certain scenarios. T
 No known limitations at this time. The MCP server is expected to work with GKE clusters without issues.
 
 ## Amazon Elastic Kubernetes Service (EKS)
-
+ 
 No known limitations at this time. The MCP server is expected to work with EKS clusters without issues.
-
+ 
+## Authentication and CLI Dependencies
+ 
+When using managed Kubernetes services (AKS, GKE, EKS), the Kubernetes SDK often relies on external command-line tools for authentication via "exec" plugins.
+ 
+### Required CLIs
+ 
+| Provider | Service | Required CLI | Recommended Auth Command |
+|----------|---------|--------------|--------------------------|
+| **Azure** | AKS | `az` (Azure CLI) | `az login` |
+| **Google** | GKE | `gcloud` (Cloud SDK) | `gcloud auth login` |
+| **AWS** | EKS | `aws` (AWS CLI) | `aws sso login` or `aws configure` |
+ 
+### Known Issue: "executable file not found"
+ 
+If the required CLI is not installed or not in your system's PATH, the MCP server will return an authentication error.
+ 
+**Error Example**: `exec: "aws": executable file not found in %PATH%`
+ 
+**Solution**:
+1. Install the corresponding CLI for your cloud provider.
+2. Ensure the CLI binary is available in the environment where the MCP client (e.g., Claude Desktop) is running.
+3. Restart your MCP client after installing the CLI to refresh the PATH environment variable.
+ 
+### GKE Authentication Plugin
+ 
+For GKE clusters, you may also need to install the GKE-specific authentication plugin:
+```bash
+gcloud components install gke-gcloud-auth-plugin
+```
+ 
 ## Self-Managed Clusters
 
 The MCP server works with any Kubernetes cluster that supports standard kubeconfig-based authentication. No specific limitations for self-managed clusters.

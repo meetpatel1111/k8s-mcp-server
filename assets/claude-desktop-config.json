@@ -1,0 +1,13 @@
+{
+  "//": "Claude Desktop Configuration. Path: %APPDATA%\\Claude\\claude_desktop_config.json",
+  "//-": "NOTE: For EKS/GKE/AKS, ensure aws-cli, gcloud, or az is installed for auth.",
+  "mcpServers": {
+    "k8s-helm-mcp": {
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"],
+      "env": {
+        "KUBECONFIG": "C:\\path\\to\\your\\.kube\\config"
+      }
+    }
+  }
+}

@@ -157,19 +157,58 @@ export function classifyError(error: any, context: ErrorContext): K8sMcpError {
       errorMessage.includes("Forbidden") ||
       errorMessage.includes("permission") ||
       errorMessage.includes("RBAC") ||
+      errorMessage.includes("exec: auth") ||
+      errorMessage.includes("expired") ||
+      errorMessage.includes("executable not found") ||
+      errorMessage.includes("plugin") ||
+      errorMessage.includes("gke-gcloud-auth-plugin") ||
+      errorMessage.includes("aws-iam-authenticator") ||
       error?.statusCode === 401 ||
       error?.statusCode === 403) {
+    
+    const suggestions = [
+      "Verify your kubeconfig has correct credentials",
+      "Check RBAC permissions for this operation",
+      "Ensure ServiceAccount has required roles/bindings",
+      "Contact cluster administrator for access"
+    ];
+
+    // Proactive Cloud CLI and Auth Plugin detection
+    const isAWS = errorMessage.includes("aws") || errorMessage.includes("eks") || errorMessage.includes("aws-iam-authenticator");
+    const isGCP = errorMessage.includes("gcloud") || errorMessage.includes("gke") || errorMessage.includes("google") || errorMessage.includes("gke-gcloud-auth-plugin");
+    const isAzure = errorMessage.includes("az") || errorMessage.includes("aks") || errorMessage.includes("azure");
+    const isMissingCLI = errorMessage.includes("executable not found") || errorMessage.includes("not found in PATH");
+
+    if (isAzure) {
+      suggestions.unshift("Run 'az login' and 'az aks get-credentials --name <cluster-name> --resource-group <resource-group>' to refresh your Azure credentials");
+      if (isMissingCLI) {
+        suggestions.unshift("Azure CLI (az) is missing or not in PATH. Install it from: https://aka.ms/installazurecliwindows");
+      }
+    } else if (isGCP) {
+      suggestions.unshift("Run 'gcloud auth login' and 'gcloud container clusters get-credentials <cluster-name>' to refresh your GKE credentials");
+      if (isMissingCLI || errorMessage.includes("gke-gcloud-auth-plugin")) {
+        suggestions.unshift("Google Cloud SDK (gcloud) or gke-gcloud-auth-plugin is missing. Install from: https://cloud.google.com/sdk/docs/install");
+        suggestions.push("Try installing the auth plugin: gcloud components install gke-gcloud-auth-plugin");
+      }
+    } else if (isAWS) {
+      suggestions.unshift("Run 'aws sso login' or 'aws configure', then 'aws eks update-kubeconfig --name <cluster-name>' to refresh your AWS credentials");
+      if (isMissingCLI) {
+        suggestions.unshift("AWS CLI (aws) is missing or not in PATH. Install it from: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html");
+      }
+    } else if (errorMessage.includes("exec") || errorMessage.includes("plugin")) {
+      suggestions.push("This cluster uses an auth plugin. Ensure the required CLI (aws, gcloud, or az) is installed and you are logged in.");
+    }
+
+    if (errorMessage.includes("expired")) {
+      suggestions.unshift("Your session has expired. Please re-authenticate with your cloud provider or cluster.");
+    }
+
     return new K8sMcpError(
       "permission",
-      `Permission denied: You don't have permission to ${context.operation}.`,
+      `Permission denied or Authentication failed: ${errorMessage}`,
       context,
       error,
-      [
-        "Verify your kubeconfig has correct credentials",
-        "Check RBAC permissions for this operation",
-        "Ensure ServiceAccount has required roles/bindings",
-        "Contact cluster administrator for access"
-      ],
+      suggestions,
       { originalMessage: errorMessage, statusCode: error?.statusCode, body: errorBody }
     );
   }

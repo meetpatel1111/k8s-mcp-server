@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.25.0 logo">
+  <img src="assets/logo.png" width="300" alt="k8s-helm-mcp v0.26.0 logo">
 </p>
 
 # k8s-helm-mcp
@@ -14,11 +14,16 @@
 [![Node.js Version](https://img.shields.io/node/v/k8s-helm-mcp.svg)](https://nodejs.org/)
 [![GitHub last commit](https://img.shields.io/github/last-commit/meetpatel1111/k8s-helm-mcp)](https://github.com/meetpatel1111/k8s-helm-mcp/commits/main)
 [![Works with Claude Desktop](https://img.shields.io/badge/Works_with-Claude_Desktop-blue?logo=anthropic)](https://modelcontextprotocol.io/)
+[![Works with Codex](https://img.shields.io/badge/Works_with-Codex-black?logo=openai)](https://openai.com/)
+[![Works with Windsurf](https://img.shields.io/badge/Works_with-Windsurf-blue?logo=codeium)](https://codeium.com/windsurf)
+[![Works with Antigravity](https://img.shields.io/badge/Works_with-Antigravity-purple?logo=google)](https://antigravity.google/)
+[![Works with Cursor](https://img.shields.io/badge/Works_with-Cursor-00c198?logo=cursor)](https://cursor.com/)
+[![Works with VS Code](https://img.shields.io/badge/Works_with-VS_Code-007ACC?logo=visual-studio-code)](https://code.visualstudio.com/)
 
-Production-grade Kubernetes MCP (Model Context Protocol) Server v0.25.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
+Production-grade Kubernetes MCP (Model Context Protocol) Server v0.26.0 - Complete cluster management via Model Context Protocol with Helm support, multi-mode protection, Enterprise Security Hardening, Secret Scrubbing, Audit Logging, Direct Exec, OpenTelemetry, Bun runtime, SSE Transport, and Bundle Optimization.
 
 > [!TIP]
-> **Status:** This package works brilliantly with **Claude Desktop** and **Claude Code**! For Claude Code, add it using `claude mcp add k8s-helm-mcp npx k8s-helm-mcp`.
+> **Status:** This package works brilliantly with **Claude Desktop**, **Claude Code**, **Codex**, **Windsurf**, **Antigravity**, **Cursor**, and **GitHub Copilot**! For most clients, you can add it using `npx -y k8s-helm-mcp`.
 
 > [!NOTE]
 > **SSE Feature:** The SSE transport feature is currently in development and should be considered experimental.
@@ -44,6 +49,7 @@ This MCP server provides comprehensive Kubernetes cluster management capabilitie
 | **Configuration** | Apply manifests, export YAML, validate manifests, namespace management, patch, edit, diff, wait, watch |
 | **Advanced** | Raw API queries, pod failure analysis, bulk operations, orphaned resource detection, resource age reports |
 | **Helm** | 40+ tools for releases, charts, repos, plugins, registry (install, upgrade, rollback, lint, template, search) |
+| **Visual & Cloud** | **Integrated Logo** (iconUrl support), **Proactive Cloud Auth** (EKS/GKE/AKS smart detection), CLI dependency guidance |
 | **Server Management** | Server info, health checks, tool metrics, graceful stop, protection mode toggles |
 
 ## Quick Start
@@ -368,8 +374,32 @@ Add to your `mcpServers` config:
 
 #### Option 3: Cursor
 
-Add server with command:
-`npx -y k8s-helm-mcp`
+Cursor uses a `mcp.json` file for configuration.
+
+**Default Paths:**
+- **Global:** `%USERPROFILE%\.cursor\mcp.json`
+- **Project-Specific:** `.cursor/mcp.json` (in your project root)
+
+**Configuration:**
+Add this to your `mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "k8s-helm-mcp": {
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"],
+      "env": {
+        "KUBECONFIG": "C:\\path\\to\\your\\.kube\\config"
+      }
+    }
+  }
+}
+```
+
+> [!TIP]
+> **UI Access:** Go to **Cursor Settings** (Ctrl + ,) > **Features** > **MCP** (or **Tools & MCP** in some versions) and click **Add New MCP Server**.
+> **Debugging:** Press `Ctrl + Shift + P` and search for **Developer: Show Logs...** > **MCP Logs** if the server connection dot is not green.
 
 #### Option 4: Claude Code
 
@@ -407,6 +437,133 @@ $env:PORT="3000"
 node dist\index.js
 ```
 
+#### Option 6: OpenAI Codex
+
+Codex uses a unified configuration system for both the CLI and the IDE extension, primarily using the **TOML** format.
+
+**Default Paths:**
+- **Global (Windows):** `%USERPROFILE%\.codex\config.toml`
+- **Global (macOS/Linux):** `~/.codex/config.toml`
+- **Project-scoped:** `.codex/config.toml` (in your project root)
+
+**Configuration:**
+Add this to your `config.toml`:
+
+```toml
+[mcp_servers.k8s-helm-mcp]
+command = "npx"
+args = ["-y", "k8s-helm-mcp"]
+env = { KUBECONFIG = "C:\\path\\to\\your\\.kube\\config" }
+```
+
+**How to Open and Edit:**
+- **Via Extension:** In VS Code, click the **Gear Icon** in the Codex sidebar and select **Codex Settings > Open config.toml**.
+- **Via CLI:** You can manage servers directly using terminal commands:
+    ```bash
+    codex mcp list                       # See all configured servers
+    codex mcp add k8s-helm-mcp --command="npx" --args="-y,k8s-helm-mcp"
+    codex mcp remove k8s-helm-mcp        # Remove a server
+    ```
+
+> [!TIP]
+> **TUI Verification:** You can verify if the server is active by typing `/mcp` in the Codex CLI TUI.
+> **Restart Required:** If you edit the `config.toml` file manually, you must restart the Codex session (or reload the VS Code window) for changes to take effect.
+
+#### Option 7: Windsurf
+
+Windsurf (by Codeium) uses `mcp_config.json` for MCP configuration.
+
+**Default Paths:**
+- **Windows:** `%USERPROFILE%\.codeium\windsurf\mcp_config.json`
+- **macOS/Linux:** `~/.codeium/windsurf/mcp_config.json`
+
+**Configuration:**
+Add this to your `mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "k8s-helm-mcp": {
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"],
+      "env": {
+        "KUBECONFIG": "C:\\path\\to\\your\\.kube\\config"
+      }
+    }
+  }
+}
+```
+
+> [!TIP]
+> **Refresh Needed:** After saving the file, click the **Refresh** button (circular arrow) in the Windsurf MCP panel to see the new tools.
+> **Variables:** Windsurf supports `${env:VARIABLE_NAME}` interpolation in the `env` section.
+
+#### Option 8: Antigravity
+
+Antigravity (Google DeepMind) uses `mcp_config.json` for custom MCP servers.
+
+**Default Paths:**
+- **Windows:** `%USERPROFILE%\.gemini\antigravity\mcp_config.json`
+- **macOS/Linux:** `~/.gemini/antigravity/mcp_config.json`
+
+**Configuration:**
+Add this to your `mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "k8s-helm-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"],
+      "env": {
+        "KUBECONFIG": "C:\\path\\to\\your\\.kube\\config"
+      }
+    }
+  }
+}
+```
+
+> [!TIP]
+> **UI Access:** Go to **Agent Panel** > **...** > **MCP Servers** > **Manage MCP Servers** > **View raw config**.
+> **Absolute Paths:** It is highly recommended to use absolute paths for executables if `npx` is not globally available in the IDE's environment.
+> **Auto-Reload:** Antigravity reloads the configuration automatically upon saving. If tools don't appear, try restarting the editor.
+
+#### Option 9: GitHub Copilot (VS Code)
+
+GitHub Copilot in VS Code supports MCP servers via a dedicated `mcp.json` file.
+
+**Default Paths:**
+- **User Profile (Global):** Run `MCP: Open User Configuration` from the Command Palette.
+- **Workspace-specific:** `.vscode/mcp.json` (located in your project's root).
+
+**Configuration:**
+Add this to your `mcp.json`:
+
+```json
+{
+  "servers": {
+    "k8s-helm-mcp": {
+      "command": "npx",
+      "args": ["-y", "k8s-helm-mcp"],
+      "env": {
+        "KUBECONFIG": "C:\\path\\to\\your\\.kube\\config",
+        "STRICT_PROTECTION_MODE": "true"
+      }
+    }
+  }
+}
+```
+
+**How to Open and Edit:**
+- **Via Command Palette:** Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS) and type **"MCP: Open User Configuration"**.
+- **Guided Flow:** Type **"MCP: Add Server"** in the Command Palette to follow a guided setup.
+
+> [!TIP]
+> **Discovery:** VS Code can automatically discover servers from other apps like Claude Desktop if `chat.mcp.discovery.enabled` is set to `true`.
+> **Sandboxing:** On macOS and Linux, you can enable sandboxing by adding `"sandboxEnabled": true` to the server config.
+> **Full Reference:** See the [official MCP configuration reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration) for all available fields.
+
 ---
 
 ## Prerequisites
@@ -416,6 +573,9 @@ Before using this MCP server, make sure you have:
 1. **kubectl installed** - [Installation Guide](https://kubernetes.io/docs/tasks/tools/)
 2. **A valid kubeconfig file** at `~/.kube/config` (or set `KUBECONFIG` env var)
 3. **Access to a Kubernetes cluster** (minikube, Docker Desktop, GKE, EKS, etc.)
+
+> [!IMPORTANT]
+> **Cloud Provider CLIs:** If you are using a managed cluster like **EKS (AWS)**, **GKE (Google)**, or **AKS (Azure)**, ensure you have the corresponding CLI tool (`aws-cli`, `gcloud`, or `az`) installed and authenticated on your local machine. The Kubernetes SDK uses these CLIs for "exec" authentication to generate tokens.
 
 **Quick verification:**
 ```bash

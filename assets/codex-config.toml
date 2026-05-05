@@ -1,0 +1,12 @@
+# Codex Configuration for k8s-helm-mcp. Path: %USERPROFILE%\.codex\config.toml
+# NOTE: For EKS/GKE/AKS, ensure aws-cli, gcloud, or az is installed for auth.
+
+[mcp_servers.k8s-helm-mcp]
+command = "npx"
+args = ["-y", "k8s-helm-mcp"]
+
+# Environment Variables
+[mcp_servers.k8s-helm-mcp.env]
+KUBECONFIG = "C:\\path\\to\\your\\.kube\\config"
+# INFRA_PROTECTION_MODE = "true"
+# STRICT_PROTECTION_MODE = "true"
