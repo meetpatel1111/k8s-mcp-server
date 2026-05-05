@@ -72,6 +72,7 @@ export class ProtectionManager {
     "k8s_toggle_all_protection_modes",
     // SRE tools
     "k8s_incident_snapshot",
+    "k8s_changes_since",
   ]);
 
   // Infrastructure Protection Mode - blocks destructive operations
